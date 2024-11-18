@@ -38,6 +38,7 @@
     awscli2
     btop
     devbox
+    duckdb
     eza
     fastfetch
     fzf
@@ -45,6 +46,7 @@
     iftop
     iotop
     jq
+    lazygit
     lsof
     nmap
     ripgrep
