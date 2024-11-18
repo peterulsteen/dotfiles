@@ -174,15 +174,15 @@
     enableZshIntegration = true;
   };
 
-  programs.neovim = {
-    enable = true;
-    defaultEditor = true; 
-    extraConfig = ''
-      set number relativenumber
-    '';
-    viAlias = true;
-    vimAlias = true;
-  };
+#  programs.neovim = {
+#    enable = true;
+#    defaultEditor = true; 
+#    extraConfig = ''
+#      set number relativenumber
+#    '';
+#    viAlias = true;
+#    vimAlias = true;
+#  };
 
   # enable the 1Password ssh agent
   programs.ssh = {
