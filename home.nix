@@ -388,9 +388,9 @@
 
   programs.zellij = {
     enable = true;
-    enableBashIntegration = true;
+    enableBashIntegration = false;
     enableFishIntegration = true;
-    enableZshIntegration = true;
+    enableZshIntegration = false;
   };
 
   programs.zoxide = {
