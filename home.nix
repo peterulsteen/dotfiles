@@ -47,6 +47,7 @@
     jq
     lsof
     nmap
+    ripgrep
     socat
     tree
     unzip
@@ -391,6 +392,9 @@
     enableBashIntegration = false;
     enableFishIntegration = true;
     enableZshIntegration = false;
+    settings = {
+      theme = "catppuccin-mocha";
+    };
   };
 
   programs.zoxide = {
