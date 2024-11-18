@@ -41,6 +41,7 @@
     duckdb
     eza
     fastfetch
+    fd
     fzf
     gh
     iftop
