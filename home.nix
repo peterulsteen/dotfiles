@@ -50,7 +50,6 @@
     socat
     tree
     unzip
-    uv
     xclip
   ];
 
