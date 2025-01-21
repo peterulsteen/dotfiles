@@ -35,7 +35,6 @@
     #   echo "Hello, ${config.home.username}!"
     # ''
     aws-vault
-    awscli2
     btop
     devbox
     duckdb
@@ -165,10 +164,25 @@
     enable = true;
     userName = "Peter Ulsteen";
     userEmail = "peter@peterulsteen.com";
+
     extraConfig = {
       init.defaultBranch = "main";
       push.autoSetupRemote = true;
+
+      # Use one key with embedded quotes
+      "includeIf \"gitdir:${config.home.homeDirectory}/Projects/heb/\"" = {
+        path = "${config.home.homeDirectory}/.gitconfig-work";
+      };
     };
+  };
+
+  # have Home Manager manage the .gitconfig-work file itself:
+  home.file.".gitconfig-work" = {
+    text = ''
+      [user]
+        name = "Peter Ulsteen""
+        email = "ulsteen.peter@heb.com"
+    '';
   };
 
   programs.mise = {

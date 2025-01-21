@@ -2,7 +2,6 @@
   description = "Home Manager configuration of peter";
 
   inputs = {
-    
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     
     home-manager = {
@@ -10,9 +9,17 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    ghostty = {
+      url = "github:ghostty-org/ghostty";
+    };
   };
 
-  outputs = inputs @ { nixpkgs, home-manager, ... }:
+  outputs = inputs @ {
+    nixpkgs,
+    home-manager,
+    ghostty,
+    ...
+  }:
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
@@ -24,9 +31,9 @@
           ./home.nix
         ];
 
-        # Optionally use extraSpecialArgs
-        # to pass through arguments to home.nix
-	extraSpecialArgs = { inherit inputs; };
+        # Optionally pass inputs on to other modules via extraSpecialArgs
+        extraSpecialArgs = { inherit inputs; };
       };
     };
 }
+
