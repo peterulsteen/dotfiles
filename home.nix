@@ -17,25 +17,11 @@
 
   # The home.packages option allows you to install Nix packages into your
   # environment.
+
   home.packages = with pkgs; [
-    # # Adds the 'hello' command to your environment. It prints a friendly
-    # # "Hello, world!" when run.
-    # pkgs.hello
-
-    # # It is sometimes useful to fine-tune packages, for example, by applying
-    # # overrides. You can do that directly here, just don't forget the
-    # # parentheses. Maybe you want to install Nerd Fonts with a limited number of
-    # # fonts?
-    # (pkgs.nerdfonts.override { fonts = [ "FantasqueSansMono" ]; })
-
-    # # You can also create simple shell scripts directly inside your
-    # # configuration. For example, this adds a command 'my-hello' to your
-    # # environment:
-    # (pkgs.writeShellScriptBin "my-hello" ''
-    #   echo "Hello, ${config.home.username}!"
-    # ''
     aws-vault
     btop
+    curl
     devbox
     duckdb
     eza
@@ -53,7 +39,10 @@
     socat
     tree
     unzip
+    wget
     xclip
+
+    nerd-fonts.jetbrains-mono
   ];
 
   # Home Manager is pretty good at managing dotfiles. The primary way to manage
@@ -180,27 +169,17 @@
   home.file.".gitconfig-work" = {
     text = ''
       [user]
-        name = "Peter Ulsteen""
+        name = "Peter Ulsteen"
         email = "ulsteen.peter@heb.com"
     '';
   };
 
   programs.mise = {
-    enable = true;
+    enable = false;
     enableBashIntegration = true;
     enableFishIntegration = true;
     enableZshIntegration = true;
   };
-
-#  programs.neovim = {
-#    enable = true;
-#    defaultEditor = true; 
-#    extraConfig = ''
-#      set number relativenumber
-#    '';
-#    viAlias = true;
-#    vimAlias = true;
-#  };
 
   # enable the 1Password ssh agent
   programs.ssh = {
@@ -399,16 +378,18 @@
   programs.vscode = {
     enable = true;
     package = pkgs.vscodium;
-    extensions = with pkgs.vscode-extensions; [
-      vscodevim.vim
-    ];
+    profiles.default = {
+      extensions = with pkgs.vscode-extensions; [
+        vscodevim.vim
+      ];
+    };
   };
 
   programs.zellij = {
     enable = true;
-    enableBashIntegration = false;
+    enableBashIntegration = true;
     enableFishIntegration = true;
-    enableZshIntegration = false;
+    enableZshIntegration = true;
     settings = {
       theme = "catppuccin-mocha";
     };
