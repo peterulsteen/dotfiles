@@ -35,6 +35,7 @@
     lazygit
     lsof
     nmap
+    nodejs
     ripgrep
     socat
     tree
@@ -113,7 +114,13 @@
   programs.fish = {
     enable = true;
     interactiveShellInit = ''
+      # Disable greeting
       set fish_greeting # Disable greeting
+      
+      # Activate mise
+      if test -f ~/.config/fish/mise.fish
+        source ~/.config/fish/mise.fish
+      end
     '';
     shellAliases = {
       "..." = "cd ../..";
@@ -175,7 +182,7 @@
   };
 
   programs.mise = {
-    enable = false;
+    enable = true;
     enableBashIntegration = true;
     enableFishIntegration = true;
     enableZshIntegration = true;
@@ -387,11 +394,12 @@
 
   programs.zellij = {
     enable = true;
-    enableBashIntegration = true;
-    enableFishIntegration = true;
-    enableZshIntegration = true;
+    enableBashIntegration = false;
+    enableFishIntegration = false;
+    enableZshIntegration = false;
     settings = {
       theme = "catppuccin-mocha";
+      default_shell = "fish";
     };
   };
 
@@ -404,21 +412,8 @@
 
   programs.zsh = {
     enable = true;
-    initExtra = ''
-      if [ "$SHELL" != "${pkgs.fish}/bin/fish" ]; then
-        exec ${pkgs.fish}/bin/fish
-      fi
-    '';
     autosuggestion.enable = true;
     enableCompletion = true;
     syntaxHighlighting.enable = true;
-    oh-my-zsh = {
-      enable = true;
-      plugins = [
-        "aws"
-        "git"
-        "python" 
-      ];
-    };
   }; 
 }
