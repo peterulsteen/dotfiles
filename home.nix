@@ -38,6 +38,7 @@
     nodejs
     ripgrep
     socat
+    tldr
     tree
     unzip
     wget
@@ -134,6 +135,9 @@
       home = "nvim ~/.config/home-manager/home.nix";
       ll = "eza -la";
       rebuild = "home-manager switch --flake ~/.config/home-manager/";
+      tf = "terraform";
+      tfa = "terraform apply";
+      tfp = "terraform plan";
       ua = "unset AWS_VAULT";
       update = "nix flake update --flake /home/peter/.config/home-manager/";
       z = "zoxide";
@@ -158,21 +162,30 @@
 
   programs.git = {
     enable = true;
-    userName = "Peter Ulsteen";
-    userEmail = "peter@peterulsteen.com";
 
+    # Remove global [user] here to avoid overriding the include
     extraConfig = {
       init.defaultBranch = "main";
       push.autoSetupRemote = true;
 
-      # Use one key with embedded quotes
-      "includeIf \"gitdir:${config.home.homeDirectory}/Projects/heb/\"" = {
+      # Include work config when in the work directory
+      "includeIf \"gitdir:${config.home.homeDirectory}/Projects/heb/**\"" = {
         path = "${config.home.homeDirectory}/.gitconfig-work";
       };
+
+      # Include fallback user config if no condition is matched
+      include.path = "${config.home.homeDirectory}/.gitconfig-default";
     };
   };
 
-  # have Home Manager manage the .gitconfig-work file itself:
+  home.file.".gitconfig-default" = {
+    text = ''
+      [user]
+        name = Peter Ulsteen
+        email = peter@peterulsteen.com
+    '';
+  };
+
   home.file.".gitconfig-work" = {
     text = ''
       [user]
@@ -188,14 +201,26 @@
     enableZshIntegration = true;
   };
 
-  # enable the 1Password ssh agent
+
   programs.ssh = {
     enable = true;
-    forwardAgent = true;
-    serverAliveInterval = 60;
-    extraConfig = ''
-      IdentityAgent "~/.1password/agent.sock"
-    '';
+    enableDefaultConfig = false;
+
+    matchBlocks."*" = {
+      forwardAgent = true;
+      serverAliveInterval = 60;
+      serverAliveCountMax = 3;
+
+      controlMaster  = "auto";
+      controlPersist = "10m";
+      controlPath    = "~/.ssh/%C";
+
+      hashKnownHosts = true;
+
+      extraOptions = {
+        IdentityAgent = "~/.1password/agent.sock";
+      };
+    };
   };
 
   programs.starship = {
