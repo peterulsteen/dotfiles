@@ -26,6 +26,7 @@
           # shells & prompt
           fish
           starship
+	        zoxide
 
           # editor & multiplexers
           neovim
@@ -59,12 +60,14 @@
           awscli2
           aws-vault
           duckdb
-          mise
 
           # extras
           tealdeer
           tree
           devbox
+          mise
+          just
+          direnv
         ];
 
         linuxOnly  = with pkgs; [ xclip ];
