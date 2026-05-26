@@ -1,0 +1,70 @@
+// ~/.config/zellij/config.kdl
+//
+// MINIMAL override config — intentionally NOT a `clear-defaults=true` dump.
+// Zellij merges this on top of its built-in defaults, so future default
+// improvements (keybinds, plugins) still reach us on upgrade. Only the lines
+// we actually care about live here.
+//
+// Layer 2 (mise: aqua:zellij-org/zellij). See repo README/CLAUDE.md.
+
+theme "catppuccin-mocha"        // matches Ghostty
+default_layout "compact"        // less chrome; remove this line to get the stock UI back
+scrollback_editor "nvim"
+
+// --- Session resurrection: survive reboots, resume Claude Code panes ---------
+// Zellij serializes each session (tabs, panes, cwds, and the COMMAND each pane
+// was running) to its cache dir. After a reboot the session shows as EXITED in
+// `zellij ls` / the session manager (Ctrl+o then w); resurrecting it rebuilds
+// the layout and pre-fills each pane's command — press Enter to re-run.
+session_serialization true            // (default true; set explicitly to document intent)
+serialize_pane_viewport true          // also restore on-screen scrollback, not just the prompt
+scrollback_lines_to_serialize 10000   // bound disk + serialization cost (0 = entire scrollback)
+on_force_close "detach"               // closing the last client detaches, keeping the session resurrectable
+
+// --- Seamless Neovim <-> Zellij navigation (vim-zellij-navigator) ------------
+// Pairs with smart-splits.nvim on the Neovim side (see lua/config/keymaps.lua).
+// Ctrl+h/j/k/l move focus across BOTH Zellij panes and Neovim splits using one
+// muscle memory. Bound in every mode except "locked" so locked mode can still
+// pass these keys through untouched.
+keybinds {
+    shared_except "locked" {
+        bind "Ctrl h" {
+            MessagePlugin "https://github.com/hiasr/vim-zellij-navigator/releases/download/0.3.0/vim-zellij-navigator.wasm" {
+                name "move_focus_or_tab"
+                payload "left"
+                move_mod "ctrl"
+                use_arrow_keys "false"
+            }
+        }
+        bind "Ctrl j" {
+            MessagePlugin "https://github.com/hiasr/vim-zellij-navigator/releases/download/0.3.0/vim-zellij-navigator.wasm" {
+                name "move_focus"
+                payload "down"
+                move_mod "ctrl"
+                use_arrow_keys "false"
+            }
+        }
+        bind "Ctrl k" {
+            MessagePlugin "https://github.com/hiasr/vim-zellij-navigator/releases/download/0.3.0/vim-zellij-navigator.wasm" {
+                name "move_focus"
+                payload "up"
+                move_mod "ctrl"
+                use_arrow_keys "false"
+            }
+        }
+        bind "Ctrl l" {
+            MessagePlugin "https://github.com/hiasr/vim-zellij-navigator/releases/download/0.3.0/vim-zellij-navigator.wasm" {
+                name "move_focus_or_tab"
+                payload "right"
+                move_mod "ctrl"
+                use_arrow_keys "false"
+            }
+        }
+    }
+}
+
+// Preload the navigator in the background at session start so the first
+// Ctrl+h/j/k/l isn't laggy while the wasm downloads/initializes.
+load_plugins {
+    "https://github.com/hiasr/vim-zellij-navigator/releases/download/0.3.0/vim-zellij-navigator.wasm"
+}

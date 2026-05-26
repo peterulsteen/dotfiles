@@ -1,0 +1,50 @@
+[user]
+    name = {{ .name | quote }}
+    email = {{ .email | quote }}
+    signingkey = {{ .signingkey | quote }}
+
+[gpg]
+    format = ssh
+
+[commit]
+    gpgsign = true
+
+[push]
+    autoSetupRemote = true
+
+[init]
+    defaultBranch = main
+
+[core]
+    excludesfile = ~/.config/git/ignore
+    pager = delta
+
+[interactive]
+    diffFilter = delta --color-only
+
+[delta]
+    navigate = true
+    line-numbers = true
+    side-by-side = true
+    syntax-theme = base16
+
+[merge]
+    conflictstyle = zdiff3
+
+[diff]
+    colorMoved = default
+    algorithm = histogram
+
+[rerere]
+    enabled = true
+
+[pull]
+    rebase = true
+{{ if .workEmail }}
+# Work identity: repos under the work directory author commits with the work
+# email (see the included config-work). Everything else uses the personal
+# email in [user] above. Both emails are verified on the same GitHub account,
+# and the one signing key works for both, so only the author email changes.
+[includeIf "gitdir:{{ .workdir }}/"]
+    path = config-work
+{{- end }}

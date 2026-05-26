@@ -1,0 +1,22 @@
+# Files chezmoi should NOT manage.
+# Syntax: gitignore-like, plus per-OS templating.
+
+# Always ignore — these are binary state, secrets, or otherwise shouldn't sync
+.DS_Store
+**/.DS_Store
+dot_config/fish/fish_variables
+README.md
+CLAUDE.md
+LICENSE
+
+# macOS-only files: ignore on every non-darwin machine
+{{- if ne .chezmoi.os "darwin" }}
+Brewfile.darwin.tmpl
+run_once_after_40-macos-defaults.sh.tmpl
+dot_config/ghostty/config
+{{- end }}
+
+# Linux-only: ignore on darwin
+{{- if eq .chezmoi.os "darwin" }}
+packages/
+{{- end }}

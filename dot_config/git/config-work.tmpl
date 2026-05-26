@@ -1,0 +1,7 @@
+{{- if .workEmail -}}
+# Included by ~/.config/git/config for repos under the work directory (see the
+# includeIf there). Overrides ONLY the author email; name and signing key are
+# inherited from the main config. Rendered empty on machines with no work identity.
+[user]
+    email = {{ .workEmail | quote }}
+{{- end -}}

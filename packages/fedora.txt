@@ -1,0 +1,13 @@
+# dnf package list for Fedora (Layer 3 tools)
+fish
+podman
+podman-compose
+gnupg2
+pinentry
+coreutils
+util-linux
+pass
+vault
+awscli2
+jetbrains-mono-fonts
+# 1password-cli installed via 1Password's RPM repo on personal machines

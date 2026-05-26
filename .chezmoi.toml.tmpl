@@ -1,0 +1,28 @@
+{{/*
+  Chezmoi config template — runs once at `chezmoi init`.
+  Prompts for per-machine values and stores them in
+  ~/.config/chezmoi/chezmoi.toml (NOT in this repo).
+
+  These values are then available to all other templates via .name, .email, etc.
+*/ -}}
+
+{{- $name        := promptStringOnce . "name"        "Full name for git commits" -}}
+{{- $email       := promptStringOnce . "email"       "Email for git commits" -}}
+{{- $signingkey  := promptStringOnce . "signingkey"  "Absolute path to SSH signing pubkey (e.g. ~/.ssh/id_ed25519.pub)" -}}
+{{- $isPersonal  := promptBoolOnce   . "isPersonal"  "Is this a personal (non-work-managed) machine?" -}}
+{{- $workEmail   := promptStringOnce . "workEmail"   "Work email for work-directory repos (blank if none)" "" -}}
+{{- $workdir     := promptStringOnce . "workdir"     "Path under which work repos live, for the git identity override (blank if none)" "" -}}
+
+# Record where this working tree lives so `chezmoi diff`/`apply` work without
+# passing --source each time. On a fresh machine that `chezmoi init`s from
+# GitHub, this resolves to chezmoi's default (~/.local/share/chezmoi); on this
+# machine it resolves to ~/code/peterulsteen/dotfiles.
+sourceDir = {{ .chezmoi.sourceDir | quote }}
+
+[data]
+    name       = {{ $name       | quote }}
+    email      = {{ $email      | quote }}
+    signingkey = {{ $signingkey | quote }}
+    isPersonal = {{ $isPersonal }}
+    workEmail  = {{ $workEmail  | quote }}
+    workdir    = {{ $workdir    | quote }}

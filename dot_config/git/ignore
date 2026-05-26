@@ -1,0 +1,58 @@
+# Global gitignore — applies to every repo on this machine.
+# Configured via `git config --global core.excludesfile ~/.config/git/ignore`
+# (handled in dot_config/git/config.tmpl).
+
+# --- macOS ---
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# --- Linux ---
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# --- Editor swap / backup files ---
+*.swp
+*.swo
+*.swn
+*.bak
+*.tmp
+.#*
+\#*#
+
+# --- Vim / Neovim ---
+.netrwhist
+Session.vim
+tags
+
+# --- VSCode / Cursor (don't litter shared repos) ---
+.vscode/
+.cursor/
+.history/
+
+# --- JetBrains IDEs ---
+.idea/
+*.iml
+
+# --- Direnv ---
+.envrc.local
+.direnv/
+
+# --- Python (when uv puts venvs adjacent to repos) ---
+.venv/
+__pycache__/
+*.pyc
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# --- Node ---
+node_modules/
+.pnpm-store/
+
+# --- Local secrets ---
+.env.local
+.envrc.private

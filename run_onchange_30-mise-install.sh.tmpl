@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Bootstrap step 3: materialize Layer 2 tools via mise, then install npm-globals
+# that depend on Node.
+#
+# This is `run_onchange_*` (not `run_once_*`) — chezmoi re-runs it whenever the
+# rendered script content changes. The mise.toml hash below gets embedded in
+# the rendered script, so any edit to mise.toml re-triggers this step:
+#
+# mise.toml hash: {{ include "dot_config/mise/config.toml.tmpl" | sha256sum }}
+
+set -euo pipefail
+
+log() { printf '\033[1;34m[bootstrap]\033[0m %s\n' "$*"; }
+
+# Ensure mise + its shims are on PATH (mise installer adds them but our shell
+# may not have re-sourced rc yet).
+export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
+
+if ! command -v mise >/dev/null 2>&1; then
+    echo "mise not found — step 20 must run first" >&2
+    exit 1
+fi
+
+log "Running mise install (Layer 2 tools)..."
+mise install
+mise reshim 2>/dev/null || true
+
+# --- Corepack: enables corepack-managed pnpm/yarn/npm shims ---
+# Reads packageManager field from each repo's package.json. Activates pnpm
+# globally as a baseline for use outside any specific project.
+if command -v corepack >/dev/null 2>&1; then
+    log "Enabling corepack and activating pnpm baseline..."
+    corepack enable
+    corepack prepare pnpm@latest --activate
+fi
+
+# --- Codex CLI via npm (self-managing thereafter) ---
+# Upgrade pattern: `npm update -g @openai/codex`.
+if command -v codex >/dev/null 2>&1; then
+    log "codex already installed"
+else
+    log "Installing Codex via npm..."
+    npm install -g @openai/codex
+fi
+
+log "Layer 2 + npm-globals ready."

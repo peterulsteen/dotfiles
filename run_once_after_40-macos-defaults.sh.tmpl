@@ -1,0 +1,53 @@
+{{- if eq .chezmoi.os "darwin" -}}
+#!/usr/bin/env bash
+# macOS system defaults — conservative tweaks applied once per machine.
+# Re-run by deleting `~/.config/chezmoi/chezmoistate.boltdb` then `chezmoi apply`.
+
+set -euo pipefail
+
+log() { printf '\033[1;34m[macos-defaults]\033[0m %s\n' "$*"; }
+
+log "Applying macOS defaults..."
+
+# --- Keyboard ---
+# Faster key repeat (helpful in Neovim/terminal); minimum values without going
+# into "broken" territory.
+defaults write NSGlobalDomain InitialKeyRepeat -int 15
+defaults write NSGlobalDomain KeyRepeat -int 2
+# Disable press-and-hold (so holding a key actually repeats it).
+defaults write NSGlobalDomain ApplePressAndHoldEnabled -bool false
+
+# --- Finder ---
+defaults write NSGlobalDomain AppleShowAllExtensions -bool true
+defaults write com.apple.finder AppleShowAllFiles -bool true
+defaults write com.apple.finder ShowPathbar -bool true
+defaults write com.apple.finder ShowStatusBar -bool true
+defaults write com.apple.finder FXPreferredViewStyle -string "Nlsv"  # list view
+defaults write com.apple.finder _FXSortFoldersFirst -bool true
+
+# --- Dock ---
+defaults write com.apple.dock autohide -bool true
+defaults write com.apple.dock autohide-delay -float 0
+defaults write com.apple.dock show-recents -bool false
+defaults write com.apple.dock tilesize -int 48
+
+# --- Misc ---
+# Disable smart-quote / smart-dash substitutions (they break code in chat boxes).
+defaults write NSGlobalDomain NSAutomaticQuoteSubstitutionEnabled -bool false
+defaults write NSGlobalDomain NSAutomaticDashSubstitutionEnabled -bool false
+defaults write NSGlobalDomain NSAutomaticPeriodSubstitutionEnabled -bool false
+
+# Save panel default to expanded.
+defaults write NSGlobalDomain NSNavPanelExpandedStateForSaveMode -bool true
+defaults write NSGlobalDomain NSNavPanelExpandedStateForSaveMode2 -bool true
+
+# Avoid creating .DS_Store on network/USB volumes.
+defaults write com.apple.desktopservices DSDontWriteNetworkStores -bool true
+defaults write com.apple.desktopservices DSDontWriteUSBStores -bool true
+
+# Restart affected apps so changes take effect.
+killall Finder 2>/dev/null || true
+killall Dock 2>/dev/null || true
+
+log "macOS defaults applied. Some changes require logout to fully take effect."
+{{- end }}

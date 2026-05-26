@@ -1,0 +1,24 @@
+// ~/.config/zellij/layouts/claude.kdl
+//
+// A Claude Code work session. Launch with:  zellij --layout claude
+// (or attach to a persistent named one:     zellij --layout claude attach -c work)
+//
+// Why the `claude --continue; or claude` wrapper:
+//   Session resurrection re-runs whatever command a pane was running. By
+//   launching Claude through this wrapper, a resurrected pane tries to RESUME
+//   the most recent conversation in this directory (`--continue`) and falls
+//   back to a fresh session if there isn't one — so "reboot -> resurrect ->
+//   Enter" drops you back into the same Claude conversation.
+
+layout {
+    tab name="claude" focus=true {
+        pane name="claude" {
+            command "fish"
+            args "-c" "claude --continue 2>/dev/null; or claude"
+        }
+    }
+    tab name="edit" {
+        pane command="nvim"
+    }
+    tab name="shell"
+}

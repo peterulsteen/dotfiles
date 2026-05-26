@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# Bootstrap step 2: install Layer 1 self-managing tools.
+#
+# These tools handle their own upgrades thereafter — never re-install via this
+# script under normal operation. Each tool's own `self update` / `update`
+# subcommand is the right way to keep them fresh.
+#
+# Idempotent: every installer is safe to re-run; existing installs are detected
+# and skipped.
+
+set -euo pipefail
+
+log()  { printf '\033[1;34m[bootstrap]\033[0m %s\n' "$*"; }
+have() { command -v "$1" >/dev/null 2>&1; }
+
+# Ensure ~/.local/bin exists and is on PATH for the rest of this script.
+# Installers below all drop binaries there.
+mkdir -p "$HOME/.local/bin"
+export PATH="$HOME/.local/bin:$PATH"
+
+# --- mise (runtime + tool manager) ---
+if have mise; then
+    log "mise already installed: $(mise --version | head -1)"
+else
+    log "Installing mise..."
+    curl -fsSL https://mise.run | sh
+fi
+
+# --- uv (Python toolchain, venvs, pipx replacement) ---
+if have uv; then
+    log "uv already installed: $(uv --version)"
+else
+    log "Installing uv..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+fi
+
+# --- rustup (Rust toolchain manager) ---
+# Installs stable channel by default; you can add nightly later with
+# `rustup toolchain install nightly`.
+if have rustup; then
+    log "rustup already installed: $(rustup --version | head -1)"
+else
+    log "Installing rustup..."
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+        | sh -s -- -y --default-toolchain stable --no-modify-path
+fi
+
+# --- Claude Code CLI ---
+if have claude; then
+    log "claude already installed"
+else
+    log "Installing Claude Code..."
+    curl -fsSL https://claude.ai/install.sh | bash
+fi
+
+# Note: Codex is installed in step 30 (after mise has provisioned Node), via
+# `npm install -g @openai/codex`. Keeping all npm-based installs in one place
+# avoids "tool A needs tool B that won't exist until step C" ordering bugs.
+
+log "Layer 1 self-managers installed."

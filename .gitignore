@@ -1,0 +1,6 @@
+# This is the chezmoi SOURCE repo. chezmoi's own state lives in ~/.config/chezmoi
+# and ~/.local/share, never here. Only guard against stray OS/editor cruft.
+.DS_Store
+**/.DS_Store
+*.swp
+*~

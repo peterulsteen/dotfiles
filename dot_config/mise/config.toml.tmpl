@@ -1,0 +1,55 @@
+# mise tools manifest (Layer 2)
+# Source of truth for all cross-platform CLIs and language runtimes.
+# Same file applies to macOS, Pop!_OS, Arch, and Fedora.
+#
+# DO NOT add tools that are owned by Layer 1 (self-managing: mise, uv, rustup, claude, codex)
+# or by Layer 3 (OS-native: fish, podman, gnupg, etc.).
+# See CLAUDE.md for the layer decision tree.
+
+[tools]
+
+# --- Language runtimes ---
+node       = "lts"
+go         = "latest"
+
+# --- Infrastructure / IaC ---
+terraform  = "latest"
+opentofu   = "latest"
+terragrunt = "latest"
+
+# --- Databases (run locally) ---
+postgres   = "16"
+
+# --- Mise ecosystem ---
+usage      = "latest"
+
+# --- Shell utilities ---
+"aqua:starship/starship"            = "latest"
+"aqua:atuinsh/atuin"                = "latest"
+"aqua:ajeetdsouza/zoxide"           = "latest"
+"aqua:eza-community/eza"            = "latest"
+"aqua:junegunn/fzf"                 = "latest"
+"aqua:BurntSushi/ripgrep"           = "latest"
+"aqua:sharkdp/fd"                   = "latest"
+"aqua:sharkdp/bat"                  = "latest"
+"aqua:dandavison/delta"             = "latest"
+"aqua:jqlang/jq"                    = "latest"
+"aqua:dbrgn/tealdeer"               = "latest"
+"aqua:zellij-org/zellij"            = "latest"
+"aqua:casey/just"                   = "latest"
+"aqua:direnv/direnv"                = "latest"
+
+# --- Dev tools ---
+"aqua:cli/cli"                      = "latest"   # gh
+"aqua:jesseduffield/lazygit"        = "latest"
+"aqua:neovim/neovim"                = "latest"
+"aqua:tree-sitter/tree-sitter"      = "latest"
+
+# --- Linters / formatters ---
+"aqua:rhysd/actionlint"             = "latest"
+"aqua:koalaman/shellcheck"          = "latest"
+"aqua:JohnnyMorganz/StyLua"         = "latest"
+"aqua:Kampfkarren/selene"           = "latest"
+
+# --- Lua language server (for Neovim) ---
+"aqua:LuaLS/lua-language-server"    = "latest"

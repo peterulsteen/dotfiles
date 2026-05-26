@@ -1,0 +1,39 @@
+# Brewfile — macOS only (Layer 3: tools that need OS integration)
+#
+# Run with: brew bundle --file=Brewfile.darwin.tmpl
+# This file is auto-applied by run_once_before_10-install-package-managers.sh.tmpl on macOS.
+#
+# DO NOT add tools here that belong in mise (Layer 2) or are self-managing (Layer 1).
+# See CLAUDE.md for the layer decision tree.
+
+# --- Login shell ---
+brew "fish"
+
+# --- Container engine (Podman everywhere; no Docker) ---
+brew "podman"
+brew "podman-compose"
+
+# --- System crypto / signing ---
+brew "gnupg"
+brew "pinentry-mac"
+
+# --- GNU coreutils for mac/Linux scripting parity ---
+brew "coreutils"
+brew "gnu-getopt"
+
+# --- Secrets / vault ---
+brew "pass"
+brew "vault"
+
+# --- AWS ---
+brew "awscli"
+
+# --- Terminal emulator ---
+cask "ghostty"
+
+# --- Fonts ---
+cask "font-jetbrains-mono-nerd-font"
+
+# --- Personal-only: 1Password CLI ---
+# Uncomment on personal macOS machines. Leave commented on the work laptop.
+# cask "1password-cli"
