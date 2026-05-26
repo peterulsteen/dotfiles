@@ -1,0 +1,23 @@
+name: secret-scan
+
+# Defense-in-depth layer 4: scan the full history on every push/PR.
+# (Layer 2 is the local gitleaks pre-commit hook; layer 3 is GitHub's own
+# push protection — enable it in Settings -> Code security.)
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history, so a secret in ANY commit is caught
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GITLEAKS_LICENSE is only required for GitHub *organization* repos.
+          # This is a personal public repo, so none is needed.

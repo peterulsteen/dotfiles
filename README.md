@@ -108,6 +108,20 @@ This repo is public. **No secrets, credentials, or private keys live in here.** 
 
 On personal Linux machines, `1password-cli` is installed and used as the secrets source. On the work-issued macOS laptop, secrets are managed manually with strict separation from personal accounts.
 
+### Defense in depth against committing secrets
+
+Because this repo is public, multiple independent guards stop a credential from ever landing in history:
+
+1. **Architecture** — per-machine secrets live in `~/.config/chezmoi/chezmoi.toml` (outside the repo); secret-bearing paths (`.ssh`, `.aws`, `.config/gh/hosts.yml`, `.netrc`, `.npmrc`, `.config/atuin`, `**/.env`, `**/*.key`, …) are in `.chezmoiignore` so `chezmoi add` refuses them.
+2. **Local pre-commit hook** — `dot_config/git/hooks/executable_pre-commit` runs [gitleaks](https://github.com/gitleaks/gitleaks) (`gitleaks git --staged`) on every commit, installed globally via `core.hooksPath`. gitleaks itself is a Layer-2 (mise) tool. Repos with their own `core.hooksPath` (Husky/lefthook) are unaffected.
+3. **GitHub push protection** — enable **Settings → Code security → Secret protection** (push protection + secret scanning; free for public repos). Server-side backstop even if local hooks are skipped.
+4. **CI** — `.github/workflows/gitleaks.yml` scans the full history on every push/PR.
+
+**When you push this repo for the first time, do the push-time steps:**
+- Enable push protection + secret scanning in repo settings (step 3 above).
+- Confirm the `secret-scan` Action ran green on the first push.
+- If you ever bypass the hook with `git commit --no-verify`, you own the risk — push protection is your last line.
+
 ## Updating
 
 ```sh

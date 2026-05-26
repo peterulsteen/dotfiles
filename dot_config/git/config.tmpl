@@ -18,6 +18,10 @@
 [core]
     excludesfile = ~/.config/git/ignore
     pager = delta
+    # Global secret-scanning pre-commit hook for ALL repos. Repos that set their
+    # own repo-local core.hooksPath (Husky v9, lefthook) override this and are
+    # unaffected. See dot_config/git/hooks/executable_pre-commit.
+    hooksPath = ~/.config/git/hooks
 
 [interactive]
     diffFilter = delta --color-only

@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+#
+# Global pre-commit secret guard. Installed for ALL repos via
+#   core.hooksPath = ~/.config/git/hooks
+# (set in ~/.config/git/config). Scans staged changes with gitleaks and blocks
+# the commit if a secret is detected.
+#
+# Coexistence: repos that set their OWN repo-local core.hooksPath (Husky v9,
+# lefthook) take precedence over the global one, so this hook simply does not
+# run there — it never clobbers another repo's hooks.
+#
+# Escape hatch (last resort, for genuine false positives):  git commit --no-verify
+#
+set -euo pipefail
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+    printf '\033[33m⚠ gitleaks not found on PATH — skipping secret scan.\033[0m\n' >&2
+    printf '  Install it:  mise use -g aqua:gitleaks/gitleaks@latest\n' >&2
+    exit 0   # don't block commits just because the scanner is missing (e.g. mid-bootstrap)
+fi
+
+if ! gitleaks git --staged --redact --no-banner; then
+    printf '\n\033[31m✖ gitleaks found a potential secret in your staged changes — commit blocked.\033[0m\n' >&2
+    printf '  Review the finding above (values are redacted).\n' >&2
+    printf '  False positive? Add a gitleaks allowlist rule, or override once with:  git commit --no-verify\n' >&2
+    exit 1
+fi
