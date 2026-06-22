@@ -1,0 +1,16 @@
+# Interactive zsh.
+#
+# In Ghostty/zellij, hand off to fish -- that's the real interactive shell.
+# Everywhere else (Superset, VS Code/Cursor, a bare `zsh`) stay in zsh so POSIX
+# command injection keeps working. This is the allowlist: only the terminals we
+# explicitly opt in get fish; new tools are POSIX-correct by default.
+#
+# Guards:
+#   [[ -o interactive ]]            -> never exec from a non-interactive shell
+#   command -v fish                 -> safe on a fresh machine before fish exists
+#   $ZELLIJ / $GHOSTTY_RESOURCES_DIR -> only inside Ghostty or a zellij session
+if [[ -o interactive ]] && command -v fish >/dev/null 2>&1; then
+  if [[ -n $ZELLIJ || -n $GHOSTTY_RESOURCES_DIR ]]; then
+    exec fish
+  fi
+fi
