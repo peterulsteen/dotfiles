@@ -2,3 +2,14 @@ theme = Catppuccin Mocha
 font-family = JetBrainsMono Nerd Font
 font-feature = calt
 font-feature = liga
+
+# Launch into a persistent Zellij session (attach-or-create "main") instead of a
+# bare shell. This lives here, not in fish, so the multiplexer ONLY starts in
+# Ghostty -- integrated terminals in editors (VS Code, Cursor, Superset, JetBrains)
+# get a plain fish shell because they never run this command.
+#
+# Absolute path: a Dock-launched Ghostty inherits launchd's PATH, which omits
+# /opt/homebrew/bin, and `command` runs without fish building up PATH first.
+# Exiting Zellij closes the window (no shell to fall back to) -- detach with the
+# Zellij keybind to keep the session alive.
+command = /opt/homebrew/bin/zellij attach --create main
