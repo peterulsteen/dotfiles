@@ -5,10 +5,12 @@
 # Layer 1 self-managers (mise, uv, rustup, claude, codex) are installed in step 20.
 # Layer 2 mise-managed tools are installed in step 30.
 #
-# Chezmoi exposes the OS via templating:
-#   {{ .chezmoi.os }}              → "darwin" | "linux"
-#   {{ .chezmoi.osRelease.id }}    → "pop" | "ubuntu" | "arch" | "fedora" (Linux only)
-#   {{ .chezmoi.osRelease.idLike }} → e.g. "ubuntu debian" for Pop!_OS
+# Chezmoi exposes the OS via templating (shown without braces so chezmoi does
+# NOT evaluate them here -- .chezmoi.osRelease is absent on macOS and would
+# error under missingkey=error):
+#   .chezmoi.os               → "darwin" | "linux"
+#   .chezmoi.osRelease.id     → "pop" | "ubuntu" | "arch" | "fedora" (Linux only)
+#   .chezmoi.osRelease.idLike → e.g. "ubuntu debian" for Pop!_OS
 
 set -euo pipefail
 
