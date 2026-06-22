@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Provision sheldon plugins (workstations only). Runs AFTER files are applied, so
+# ~/.config/sheldon/plugins.toml exists, and re-runs whenever that file changes
+# (its hash is embedded below to trigger chezmoi's run_onchange).
+#
+# plugins.toml hash: {{ include "dot_config/sheldon/plugins.toml" | sha256sum }}
+
+set -euo pipefail
+
+log()  { printf '\033[1;34m[sheldon]\033[0m %s\n' "$*"; }
+have() { command -v "$1" >/dev/null 2>&1; }
+
+{{- $ws := true }}{{ if hasKey . "isWorkstation" }}{{ $ws = .isWorkstation }}{{ end }}
+{{- if not $ws }}
+log "server/VM profile: skipping plugin provisioning."
+exit 0
+{{- end }}
+
+if ! have sheldon; then
+    log "sheldon not installed; skipping (workstation install lives in step 10/20)."
+    exit 0
+fi
+
+log "Locking plugins from plugins.toml..."
+sheldon lock
+
+# sheldon git-clones plugins but does NOT init submodules. zsh-abbr depends on
+# the zsh-job-queue submodule; without it the abbr engine bails before loading
+# abbreviations. Initialize submodules in every cloned repo that declares them so
+# the FIRST interactive shell is already correct (otherwise zsh-abbr self-heals
+# lazily on first run, which is non-deterministic).
+repos="${XDG_DATA_HOME:-$HOME/.local/share}/sheldon/repos"
+if [ -d "$repos" ]; then
+    find "$repos" -type f -name .gitmodules 2>/dev/null | while IFS= read -r gm; do
+        repo="$(dirname "$gm")"
+        log "Initializing submodules in $(basename "$repo")..."
+        git -C "$repo" submodule update --init --recursive >/dev/null 2>&1 || \
+            log "WARN: submodule init failed for $repo"
+    done
+fi
+
+log "Plugins provisioned."

@@ -1,0 +1,36 @@
+# zsh-abbr abbreviations (https://github.com/olets/zsh-abbr).
+# Ported 1:1 from the fish config. Expand inline at the prompt -- you see the
+# real command before Enter. Stored format is `abbr "name"="expansion"`; edit
+# here or via the `abbr` CLI (which rewrites this file).
+
+# --- Listings (eza) ---
+abbr "ll"="eza -lah --icons --git --group-directories-first"
+abbr "la"="eza -lah --icons --git"
+abbr "ltr"="eza --tree --icons --level 2"
+
+# --- Cat / bat ---
+abbr "bcat"="bat --paging=never"
+
+# --- Git ---
+abbr "gst"="git status"
+abbr "gd"="git diff"
+abbr "gds"="git diff --staged"
+abbr "gl"="git pull"
+abbr "gp"="git push"
+abbr "gco"="git checkout"
+abbr "gcm"="git commit -m"
+abbr "gca"="git commit --amend --no-edit"
+abbr "glo"="git log --oneline --graph --decorate"
+abbr "lg"="lazygit"
+
+# --- Container engine (podman, with docker muscle memory) ---
+abbr "docker"="podman"
+abbr "docker-compose"="podman compose"
+
+# --- Mise ---
+abbr "mr"="mise run"
+abbr "mu"="mise upgrade"
+abbr "mls"="mise ls"
+
+# --- AWS v1/v2 transition-era muscle memory ---
+abbr "aws2"="aws"

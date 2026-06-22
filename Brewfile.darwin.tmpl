@@ -6,8 +6,9 @@
 # DO NOT add tools here that belong in mise (Layer 2) or are self-managing (Layer 1).
 # See CLAUDE.md for the layer decision tree.
 
-# --- Login shell ---
-brew "fish"
+# --- Shells ---
+brew "fish"       # interactive shell in Ghostty/zellij (via .zshrc handoff)
+brew "sheldon"    # zsh plugin manager (workstation interactive stack)
 
 # --- Container engine (Podman everywhere; no Docker) ---
 brew "podman"

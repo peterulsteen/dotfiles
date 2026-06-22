@@ -1,0 +1,12 @@
+# POSIX login profile for bash/sh on lean servers and VMs.
+#
+# Shares the exact same environment as the zsh workstations via env.sh, so PATH
+# and tool config never drift between shells. Workstations use zsh and never read
+# this file; it exists for bash-login boxes.
+
+[ -f "$HOME/.config/shell/env.sh" ] && . "$HOME/.config/shell/env.sh"
+
+# Interactive bash login shells also read .bashrc (bash does not do this itself).
+if [ -n "${BASH_VERSION:-}" ] && [ -f "$HOME/.bashrc" ]; then
+  . "$HOME/.bashrc"
+fi

@@ -51,3 +51,13 @@ Brewfile.darwin
 {{- if eq .chezmoi.os "darwin" }}
 packages
 {{- end }}
+
+# --- Lean server/VM profile: skip the full workstation interactive stack ---
+# (defensive default = workstation, so a machine that hasn't re-run `chezmoi init`
+# for the new isWorkstation prompt still gets the full set.)
+{{- $ws := true }}{{ if hasKey . "isWorkstation" }}{{ $ws = .isWorkstation }}{{ end }}
+{{- if not $ws }}
+.config/sheldon
+.config/zsh-abbr
+.config/fish
+{{- end }}

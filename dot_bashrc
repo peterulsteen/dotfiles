@@ -1,0 +1,28 @@
+# Interactive bash for lean servers/VMs.
+#
+# No plugin manager here -- the "servers lean" profile. Just shared env, a few
+# aliases, and the standalone tools worth having on a box you SSH into. The rich
+# zsh stack (sheldon, autosuggestions, abbreviations) lives only on workstations.
+
+[ -f "$HOME/.config/shell/env.sh" ] && . "$HOME/.config/shell/env.sh"
+
+# Interactive only.
+case $- in *i*) ;; *) return ;; esac
+
+# Minimal aliases. bash has no fish-style abbreviations; these mirror the few
+# that matter most on a server. (Workstations get the full set via zsh-abbr.)
+command -v eza >/dev/null 2>&1 && alias ll='eza -lah --icons --git --group-directories-first' \
+                               || alias ll='ls -lah'
+alias gst='git status'
+alias gd='git diff'
+alias gl='git pull'
+alias gp='git push'
+command -v podman >/dev/null 2>&1 && alias docker='podman'
+
+# Standalone tools (bash init), guarded so a minimal box degrades gracefully.
+command -v starship >/dev/null 2>&1 && eval "$(starship init bash)"
+command -v zoxide   >/dev/null 2>&1 && eval "$(zoxide init bash)"
+command -v direnv   >/dev/null 2>&1 && eval "$(direnv hook bash)"
+command -v mise     >/dev/null 2>&1 && eval "$(mise activate bash)"
+# atuin last so it owns Ctrl-R / up-arrow history.
+command -v atuin    >/dev/null 2>&1 && eval "$(atuin init bash)"

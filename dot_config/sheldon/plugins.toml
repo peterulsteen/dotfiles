@@ -1,0 +1,36 @@
+# sheldon plugin set (https://sheldon.cli.rs).
+#
+# One declarative list, identical on macOS / Pop / Arch. sheldon git-clones each
+# plugin into its own cache, so versions are consistent across machines no matter
+# what each OS package manager ships. Regenerate the cached source after edits:
+#   sheldon lock --update    (fetch latest)   /   sheldon source   (re-emit)
+#
+# Load order matters and is the whole reason for the inline compinit below:
+#   completions -> fpath, THEN compinit, THEN autosuggestions, THEN highlighting.
+
+shell = "zsh"
+
+# Extra completion definitions. apply=fpath adds the dir to $fpath WITHOUT
+# sourcing; compinit (next) must run after this to pick them up.
+[plugins.zsh-completions]
+github = "zsh-users/zsh-completions"
+apply = ["fpath"]
+
+# Run compinit at the correct point in the load order: after fpath is populated,
+# before the ZLE plugins below. -C skips the slow per-file security audit; -d
+# points the dump at an XDG cache path (.zshrc pre-creates the dir).
+[plugins.compinit]
+inline = 'autoload -Uz compinit && compinit -C -d "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/zcompdump"'
+
+# fish-style inline autosuggestions from history.
+[plugins.zsh-autosuggestions]
+github = "zsh-users/zsh-autosuggestions"
+
+# fish-style abbreviations: expand inline at the prompt so you see the real
+# command before Enter. Seeded from ~/.config/zsh-abbr/user-abbreviations.
+[plugins.zsh-abbr]
+github = "olets/zsh-abbr"
+
+# Syntax highlighting. MUST be last so it wraps every ZLE widget defined above.
+[plugins.fast-syntax-highlighting]
+github = "zdharma-continuum/fast-syntax-highlighting"

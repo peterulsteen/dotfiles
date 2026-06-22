@@ -1,31 +1,11 @@
-# Login-shell environment for zsh.
+# zsh login shell.
 #
-# zsh is the *login* shell (POSIX) so that GUI tools which spawn $SHELL and feed
-# it POSIX syntax -- Superset's `claude "$(cat <<'EOF' ... EOF)"` heredoc, cron,
-# editors -- get a shell that can actually parse it. Interactive fish is launched
-# from .zshrc, but only inside Ghostty/zellij (see that file).
+# zsh is the POSIX login shell so GUI tools that spawn $SHELL and feed it POSIX
+# syntax (Superset's `claude "$(cat <<'EOF' ... EOF)"` heredoc, cron, editors)
+# get a shell that can parse it. Interactive fish is launched from .zshrc, but
+# only inside Ghostty/zellij.
 #
-# Runs after /etc/zprofile (which runs path_helper), so PATH prepends here win.
+# Runs after /etc/zprofile (path_helper), so the PATH set in env.sh wins.
+# All environment lives in the shared POSIX file so zsh and bash stay in sync.
 
-# Homebrew: sets HOMEBREW_PREFIX/MANPATH and prepends /opt/homebrew/{bin,sbin}.
-eval "$(/opt/homebrew/bin/brew shellenv zsh)"
-
-# PATH order mirrors the fish config: ~/.local/bin (self-installers) > mise shims
-# > cargo > everything else. typeset -U keeps PATH de-duplicated.
-typeset -U path
-path=(
-  $HOME/.local/bin
-  $HOME/.local/share/mise/shims
-  $HOME/.cargo/bin
-  $path
-)
-
-# uv installs ~/.local/bin/env with its own PATH wiring; source it if present.
-[ -f "$HOME/.local/bin/env" ] && . "$HOME/.local/bin/env"
-
-# LM Studio CLI (lms).
-[ -d "$HOME/.lmstudio/bin" ] && path+=("$HOME/.lmstudio/bin")
-
-# Default editor (mirrors fish config).
-export EDITOR=nvim
-export VISUAL=nvim
+[ -f "$HOME/.config/shell/env.sh" ] && . "$HOME/.config/shell/env.sh"

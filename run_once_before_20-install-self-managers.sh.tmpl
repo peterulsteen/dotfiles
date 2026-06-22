@@ -53,6 +53,21 @@ else
     curl -fsSL https://claude.ai/install.sh | bash
 fi
 
+# --- sheldon (zsh plugin manager) ---
+# Workstations only (servers stay lean). macOS installs it via the Brewfile in
+# step 10; other workstations build it with cargo (rustup is installed above).
+{{- $ws := true }}{{ if hasKey . "isWorkstation" }}{{ $ws = .isWorkstation }}{{ end }}
+{{- if and $ws (ne .chezmoi.os "darwin") }}
+if have sheldon; then
+    log "sheldon already installed: $(sheldon --version | head -1)"
+elif have cargo; then
+    log "Installing sheldon (cargo)..."
+    cargo install sheldon --locked
+else
+    log "WARN: cargo unavailable; cannot install sheldon (plugins will be skipped)"
+fi
+{{- end }}
+
 # Note: Codex is installed in step 30 (after mise has provisioned Node), via
 # `npm install -g @openai/codex`. Keeping all npm-based installs in one place
 # avoids "tool A needs tool B that won't exist until step C" ordering bugs.
