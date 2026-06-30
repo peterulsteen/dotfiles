@@ -1,0 +1,17 @@
+{{- if and (eq .chezmoi.os "linux") (eq .chezmoi.osRelease.id "pop") -}}
+# Pop!_OS / system76-power — GPU profile switching and container socket compat.
+# Only deployed on Pop!_OS machines (system76-power is not available elsewhere).
+
+# GPU profile switching (requires logout to take effect after each switch).
+abbr --add gpu-int  'sudo system76-power graphics integrated'
+abbr --add gpu-nvid 'sudo system76-power graphics nvidia'
+abbr --add gpu-hybr 'sudo system76-power graphics hybrid'
+abbr --add gpu-stat 'system76-power graphics; system76-power profile'
+
+# Rootless Podman socket — lets Docker-expecting tools (Testcontainers, kind)
+# find the socket without running as root.
+set -gx DOCKER_HOST "unix://$XDG_RUNTIME_DIR/podman/podman.sock"
+
+# kind v0.20+ can use Podman as its container runtime.
+set -gx KIND_EXPERIMENTAL_PROVIDER podman
+{{- end }}

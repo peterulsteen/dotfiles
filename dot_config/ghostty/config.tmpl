@@ -8,8 +8,12 @@ font-feature = liga
 # Ghostty -- integrated terminals in editors (VS Code, Cursor, Superset, JetBrains)
 # get a plain fish shell because they never run this command.
 #
-# Absolute path: a Dock-launched Ghostty inherits launchd's PATH, which omits
-# /opt/homebrew/bin, and `command` runs without fish building up PATH first.
+# Absolute path: GUI-launched Ghostty may inherit a minimal PATH that omits
+# package-manager bin dirs, so we hardcode the known location per OS.
 # Exiting Zellij closes the window (no shell to fall back to) -- detach with the
 # Zellij keybind to keep the session alive.
+{{ if eq .chezmoi.os "darwin" -}}
 command = /opt/homebrew/bin/zellij attach --create main
+{{- else -}}
+command = {{ .chezmoi.homeDir }}/.local/share/mise/shims/zellij attach --create main
+{{- end }}

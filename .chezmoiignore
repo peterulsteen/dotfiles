@@ -44,7 +44,6 @@ LICENSE
 # --- macOS-only files: ignore on every non-darwin machine ---
 {{- if ne .chezmoi.os "darwin" }}
 Brewfile.darwin
-.config/ghostty/config
 {{- end }}
 
 # --- Linux-only files: ignore on darwin ---
