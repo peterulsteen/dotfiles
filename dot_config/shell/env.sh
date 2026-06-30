@@ -44,6 +44,13 @@ if [ -d "$PNPM_HOME" ]; then
   case ":$PATH:" in *":$PNPM_HOME:"*) ;; *) PATH="$PNPM_HOME:$PATH"; export PATH ;; esac
 fi
 
+# --- 1Password SSH agent.
+# Prefer the 1Password agent over the GNOME keyring agent so that git commit
+# signing (via ssh-keygen -> SSH agent) can trigger the system-auth unlock
+# dialog when the app is locked, rather than failing silently.
+# Guarded: only override if the socket actually exists (1Password installed).
+[ -S "$HOME/.1password/agent.sock" ] && SSH_AUTH_SOCK="$HOME/.1password/agent.sock" && export SSH_AUTH_SOCK
+
 # --- Editor + tooling env (mirrors the fish config). ---
 export EDITOR=nvim
 export VISUAL=nvim
