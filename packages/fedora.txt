@@ -7,7 +7,6 @@ pinentry
 coreutils
 util-linux
 pass
-vault
 awscli2
 google-cloud-cli
 jetbrains-mono-fonts

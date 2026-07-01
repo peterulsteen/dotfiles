@@ -7,7 +7,6 @@ pinentry
 coreutils
 util-linux
 pass
-vault
 aws-cli-v2
 google-cloud-cli
 ttf-jetbrains-mono-nerd

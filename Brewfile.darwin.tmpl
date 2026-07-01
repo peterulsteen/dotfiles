@@ -23,9 +23,10 @@ brew "pinentry-mac"
 brew "coreutils"
 brew "gnu-getopt"
 
-# --- Secrets / vault ---
+# --- Secrets ---
 brew "pass"
-brew "vault"
+# NB: `vault` intentionally dropped — it lives in hashicorp/tap, which Homebrew
+# 6.x refuses to load without `brew trust`. Not worth trusting a third-party tap.
 
 # --- AWS ---
 brew "awscli"

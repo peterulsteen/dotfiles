@@ -9,7 +9,6 @@ pinentry-tty
 coreutils
 util-linux
 pass
-vault
 awscli
 google-cloud-cli
 fonts-jetbrains-mono

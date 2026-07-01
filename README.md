@@ -34,7 +34,7 @@ This is the decision I keep coming back to. Every tool lives in **exactly one** 
 |---|---|---|---|
 | **1. Self-managing** | The tool's own installer / `<tool> self update` | `mise`, `uv`, `rustup`, `claude`, `codex` | Things that ship fast and update themselves well. I bootstrap them once and leave them alone. |
 | **2. mise** | `~/.config/mise/config.toml` | `node`, `go`, `terraform`, `opentofu`, `gh`, `lazygit`, `neovim`, `fzf`, `ripgrep`, `jq`, `fd`, `bat`, `eza`, `zoxide`, `atuin`, `starship`, `zellij`, `just`, `direnv`, `delta`, `gitleaks`, `stylua`, `selene`, `tree-sitter`, `shellcheck`, `actionlint`, `tealdeer` | Cross-platform single-binary tools and language runtimes. One declarative file, same on all four OSs. |
-| **3. Native pkg mgr** | `brew` / `apt` / `pacman` / `dnf` | `fish` (login shell), `ghostty`, `gnupg`, `podman`, `podman-compose`, fonts, `coreutils`, `gnu-getopt`, `vault`, `awscli`, `google-cloud-cli`, `pass` | Things that need real OS integration: login shells, terminal emulators, system crypto, daemons, GUI apps, fonts. |
+| **3. Native pkg mgr** | `brew` / `apt` / `pacman` / `dnf` | `fish` (login shell), `ghostty`, `gnupg`, `podman`, `podman-compose`, fonts, `coreutils`, `gnu-getopt`, `awscli`, `google-cloud-cli`, `pass` | Things that need real OS integration: login shells, terminal emulators, system crypto, daemons, GUI apps, fonts. |
 
 My one hard rule: **a tool gets exactly one layer.** No `claude` in both `~/.local/bin` and a Brewfile, no `node` in both mise and brew, no `rust` in mise (rustup owns it). When two layers fight over the same tool, I get silent drift — so I don't let them.
 
