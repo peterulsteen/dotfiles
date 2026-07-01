@@ -30,6 +30,12 @@ brew "vault"
 # --- AWS ---
 brew "awscli"
 
+# --- Google Cloud ---
+# Multi-file SDK with its own component manager → native pkg mgr, not mise.
+# The cask disables the built-in updater; update via `brew upgrade --cask`.
+# Auth/config lives in ~/.config/gcloud (secret-bearing, .chezmoiignore'd).
+cask "google-cloud-sdk"
+
 # --- Terminal emulator ---
 cask "ghostty"
 

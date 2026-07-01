@@ -59,6 +59,46 @@ read_pkg_list() {
     grep -vE '^\s*(#|$)' "$1" | tr '\n' ' '
 }
 
+# --- Helper: configure Google Cloud CLI apt repo (google-cloud-cli is not in
+# Debian/Ubuntu's default repos). Idempotent. Must run before `apt-get install`. ---
+setup_gcloud_apt_repo() {
+    local keyring=/usr/share/keyrings/cloud.google.gpg
+    local list=/etc/apt/sources.list.d/google-cloud-sdk.list
+    if [ -f "$keyring" ] && [ -f "$list" ]; then
+        log "Google Cloud apt repo already configured."
+        return
+    fi
+    log "Configuring Google Cloud apt repo..."
+    sudo apt-get update
+    sudo apt-get install -y apt-transport-https ca-certificates gnupg curl
+    curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg \
+        | sudo gpg --dearmor -o "$keyring"
+    echo "deb [signed-by=${keyring}] https://packages.cloud.google.com/apt cloud-sdk main" \
+        | sudo tee "$list" >/dev/null
+}
+
+# --- Helper: configure Google Cloud CLI dnf repo (Fedora consumes Google's EL9
+# yum repo). Idempotent. Must run before `dnf install`. Settings mirror Google's
+# documented RHEL/Fedora repo; $basearch resolves to x86_64 on the owner's box.
+# aarch64 yum coverage lags — pin the arch in baseurl if installing on ARM. ---
+setup_gcloud_dnf_repo() {
+    local repo=/etc/yum.repos.d/google-cloud-cli.repo
+    if [ -f "$repo" ]; then
+        log "Google Cloud dnf repo already configured."
+        return
+    fi
+    log "Configuring Google Cloud dnf repo..."
+    sudo tee "$repo" >/dev/null <<'EOF'
+[google-cloud-cli]
+name=Google Cloud CLI
+baseurl=https://packages.cloud.google.com/yum/repos/cloud-sdk-el9-$basearch
+enabled=1
+gpgcheck=1
+repo_gpgcheck=0
+gpgkey=https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+EOF
+}
+
 # --- OS dispatch ---
 # Match on $DISTRO_ID first (most specific). Fall back to $DISTRO_LIKE for
 # derivatives we haven't named explicitly. Keep it as a flat routing table.
@@ -71,6 +111,7 @@ case "$OS" in
         case "$DISTRO_ID" in
             pop|ubuntu|debian)
                 log "Installing apt packages (id=${DISTRO_ID})..."
+                setup_gcloud_apt_repo
                 sudo apt-get update
                 sudo apt-get install -y $(read_pkg_list "${PKG_DIR}/debian.txt")
                 ;;
@@ -80,12 +121,14 @@ case "$OS" in
                 ;;
             fedora)
                 log "Installing dnf packages..."
+                setup_gcloud_dnf_repo
                 sudo dnf install -y $(read_pkg_list "${PKG_DIR}/fedora.txt")
                 ;;
             *)
                 case "$DISTRO_LIKE" in
                     *debian*)
                         log "Falling back to debian via idLike (${DISTRO_LIKE})..."
+                        setup_gcloud_apt_repo
                         sudo apt-get update
                         sudo apt-get install -y $(read_pkg_list "${PKG_DIR}/debian.txt")
                         ;;
@@ -95,6 +138,7 @@ case "$OS" in
                         ;;
                     *fedora*|*rhel*)
                         log "Falling back to fedora via idLike (${DISTRO_LIKE})..."
+                        setup_gcloud_dnf_repo
                         sudo dnf install -y $(read_pkg_list "${PKG_DIR}/fedora.txt")
                         ;;
                     *)

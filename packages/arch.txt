@@ -9,5 +9,6 @@ util-linux
 pass
 vault
 aws-cli-v2
+google-cloud-cli
 ttf-jetbrains-mono-nerd
 # 1password-cli is in AUR (1password-cli) — handled separately on personal machines

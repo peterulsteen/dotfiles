@@ -9,5 +9,6 @@ util-linux
 pass
 vault
 awscli2
+google-cloud-cli
 jetbrains-mono-fonts
 # 1password-cli installed via 1Password's RPM repo on personal machines
