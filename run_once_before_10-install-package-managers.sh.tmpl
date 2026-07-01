@@ -51,7 +51,10 @@ install_homebrew_if_missing() {
 # --- Helper: install brew packages from Brewfile ---
 install_brew_packages() {
     log "Installing macOS Homebrew packages from Brewfile..."
-    brew bundle --no-lock --file="${BREWFILE}"
+    # NB: `--no-lock` was removed from `brew bundle` (Brewfile.lock.json is no
+    # longer generated), so passing it now errors. Modern brew bundle is
+    # lockfile-free by default.
+    brew bundle --file="${BREWFILE}"
 }
 
 # --- Helper: install packages from a newline-separated list, ignoring blank/comment lines ---
