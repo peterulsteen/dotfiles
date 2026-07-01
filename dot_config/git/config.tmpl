@@ -5,21 +5,35 @@
 
 [gpg]
     format = ssh
-{{ if eq .chezmoi.os "darwin" }}
+{{- if eq .chezmoi.os "darwin" }}
+{{-   $opSign := "/Applications/1Password.app/Contents/MacOS/op-ssh-sign" }}
+{{-   if stat $opSign }}
 # macOS: op-ssh-sign connects directly to the 1Password app IPC (already unlocked
-# by the time you commit, thanks to macOS Keychain integration).
+# by the time you commit, thanks to macOS Keychain integration). NB: the signer
+# lives inside the app bundle — /opt/1Password/op-ssh-sign is the LINUX path.
 [gpg "ssh"]
-    program = /opt/1Password/op-ssh-sign
-{{ else }}
+    program = {{ $opSign }}
+
+[commit]
+    gpgsign = true
+{{-   else }}
+# macOS without 1Password (e.g. the work laptop, where 1Password is intentionally
+# not installed): no SSH signing helper exists and the key's private half lives in
+# 1Password, so signing is impossible here. Commit unsigned rather than break every
+# commit. Install 1Password and re-run `chezmoi apply` to restore signed commits.
+[commit]
+    gpgsign = false
+{{-   end }}
+{{- else }}
 # Linux: op-ssh-sign cannot trigger a polkit unlock dialog when 1Password is locked.
 # ssh-keygen routes through SSH_AUTH_SOCK (the 1Password agent), which CAN pop up
 # a system-auth dialog on demand.
 [gpg "ssh"]
     program = /usr/bin/ssh-keygen
-{{ end }}
 
 [commit]
     gpgsign = true
+{{- end }}
 
 [push]
     autoSetupRemote = true
