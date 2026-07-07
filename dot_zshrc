@@ -36,6 +36,15 @@ fi
 # via ZLE); tune suggestion strategy to history + completion.
 ZSH_AUTOSUGGEST_STRATEGY=(history completion)
 
+# --- 4b. Guarded aliases (things zsh-abbr's static file can't express) ---------
+# docker -> podman only when there's no real docker binary. On the work Mac Dory
+# provides a real `docker`, so leave it alone; on podman-only boxes, shim it.
+# Mirrors the `if not command -q docker` guard in the fish conf.d.
+if ! command -v docker >/dev/null 2>&1; then
+  alias docker='podman'
+  alias docker-compose='podman compose'
+fi
+
 # --- 5. Standalone tools (same set fish loads, zsh init) -----------------------
 command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"
 command -v zoxide   >/dev/null 2>&1 && eval "$(zoxide init zsh)"

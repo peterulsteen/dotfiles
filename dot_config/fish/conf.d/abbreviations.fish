@@ -23,9 +23,13 @@ abbr --add glo 'git log --oneline --graph --decorate'
 abbr --add lg  'lazygit'
 
 # --- Container engine ---
-# Podman on every machine; preserve docker muscle memory.
-abbr --add docker         'podman'
-abbr --add docker-compose 'podman compose'
+# Only shim docker -> podman when there's no real docker binary
+# (Podman-only machines, e.g. personal Linux). On the work Mac,
+# Dory provides a real `docker`, so leave it alone.
+if not command -q docker
+    abbr --add docker         'podman'
+    abbr --add docker-compose 'podman compose'
+end
 
 # --- Mise ---
 abbr --add mr  'mise run'

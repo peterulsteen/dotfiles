@@ -23,9 +23,11 @@ abbr "gca"="git commit --amend --no-edit"
 abbr "glo"="git log --oneline --graph --decorate"
 abbr "lg"="lazygit"
 
-# --- Container engine (podman, with docker muscle memory) ---
-abbr "docker"="podman"
-abbr "docker-compose"="podman compose"
+# --- Container engine ---
+# docker/docker-compose -> podman is NOT set here: the static abbr format can't
+# express fish's `if not command -q docker` guard, and on the work Mac Dory
+# provides a real `docker`. .zshrc defines both shims as guarded aliases (only
+# when no real docker binary exists), matching the fish conf.d behavior.
 
 # --- Mise ---
 abbr "mr"="mise run"
