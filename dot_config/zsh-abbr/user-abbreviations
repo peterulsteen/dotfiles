@@ -1,6 +1,6 @@
 # zsh-abbr abbreviations (https://github.com/olets/zsh-abbr).
-# Ported 1:1 from the fish config. Expand inline at the prompt -- you see the
-# real command before Enter. Stored format is `abbr "name"="expansion"`; edit
+# fish-style: expand inline at the prompt -- you see the real command before
+# Enter. Stored format is `abbr "name"="expansion"`; edit
 # here or via the `abbr` CLI (which rewrites this file).
 
 # --- Listings (eza) ---
@@ -25,9 +25,9 @@ abbr "lg"="lazygit"
 
 # --- Container engine ---
 # docker/docker-compose -> podman is NOT set here: the static abbr format can't
-# express fish's `if not command -q docker` guard, and on the work Mac Dory
-# provides a real `docker`. .zshrc defines both shims as guarded aliases (only
-# when no real docker binary exists), matching the fish conf.d behavior.
+# express a `command -v docker` guard, and on the work Mac Dory provides a real
+# `docker`. .zshrc defines both shims as guarded aliases (only when no real
+# docker binary exists).
 
 # --- Mise ---
 abbr "mr"="mise run"

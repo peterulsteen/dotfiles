@@ -6,8 +6,9 @@
 # DO NOT add tools here that belong in mise (Layer 2) or are self-managing (Layer 1).
 # See CLAUDE.md for the layer decision tree.
 
-# --- Shells ---
-brew "fish"       # interactive shell in Ghostty/zellij (via .zshrc handoff)
+# --- Shell ---
+# zsh is the login + interactive shell; macOS ships /bin/zsh built-in, so only
+# the plugin manager is installed here.
 brew "sheldon"    # zsh plugin manager (workstation interactive stack)
 
 # --- Container engine (Podman everywhere; no Docker) ---

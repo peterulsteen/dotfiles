@@ -1,22 +1,11 @@
-# Interactive zsh.
+# Interactive zsh -- the login and interactive shell on every machine.
 
-# --- 1. Fish handoff (FIRST, before any heavy loading) -------------------------
-# In Ghostty/zellij, hand off to fish -- the real interactive shell -- before
-# loading zsh plugins we'd immediately discard. Everywhere else (Superset,
-# VS Code, Linux workstations, a bare `zsh`) stay in zsh so POSIX command
-# injection keeps working. Allowlist: only these terminals opt in to fish.
-if [[ -o interactive ]] && command -v fish >/dev/null 2>&1; then
-  if [[ -n $ZELLIJ || -n $GHOSTTY_RESOURCES_DIR ]]; then
-    exec fish
-  fi
-fi
-
-# --- 2. Environment ------------------------------------------------------------
+# --- 1. Environment ------------------------------------------------------------
 # .zprofile already sourced env.sh for login shells; the source-once guard makes
 # this a no-op there, and covers non-login interactive shells.
 [[ -f ~/.config/shell/env.sh ]] && source ~/.config/shell/env.sh
 
-# --- 3. zsh options + history --------------------------------------------------
+# --- 2. zsh options + history --------------------------------------------------
 setopt AUTO_CD INTERACTIVE_COMMENTS
 setopt EXTENDED_HISTORY HIST_IGNORE_DUPS HIST_IGNORE_SPACE HIST_REDUCE_BLANKS SHARE_HISTORY
 HISTFILE="${XDG_STATE_HOME:-$HOME/.local/state}/zsh/history"
@@ -24,7 +13,7 @@ HISTSIZE=100000
 SAVEHIST=100000
 mkdir -p "${HISTFILE:h}" "${XDG_CACHE_HOME:-$HOME/.cache}/zsh"
 
-# --- 4. Plugins via sheldon ----------------------------------------------------
+# --- 3. Plugins via sheldon ----------------------------------------------------
 # autosuggestions + abbreviations + completions + fast-syntax-highlighting, in
 # the correct load order (compinit is sequenced inside plugins.toml). Guarded on
 # the binary so lean servers without sheldon just skip the whole block.
@@ -32,20 +21,28 @@ if command -v sheldon >/dev/null 2>&1; then
   eval "$(sheldon source)"
 fi
 
-# fish-like: accept an autosuggestion with the right arrow / End (already default
-# via ZLE); tune suggestion strategy to history + completion.
+# Accept an autosuggestion with the right arrow / End (default via ZLE); tune
+# the suggestion strategy to history + completion.
 ZSH_AUTOSUGGEST_STRATEGY=(history completion)
 
-# --- 4b. Guarded aliases (things zsh-abbr's static file can't express) ---------
+# --- 4. Guarded aliases (machine-conditional; zsh-abbr's static file can't) ----
 # docker -> podman only when there's no real docker binary. On the work Mac Dory
 # provides a real `docker`, so leave it alone; on podman-only boxes, shim it.
-# Mirrors the `if not command -q docker` guard in the fish conf.d.
 if ! command -v docker >/dev/null 2>&1; then
   alias docker='podman'
   alias docker-compose='podman compose'
 fi
 
-# --- 5. Standalone tools (same set fish loads, zsh init) -----------------------
+# Pop!_OS GPU profile switching (requires logout after each switch). Guarded on
+# the binary, so it's a no-op everywhere system76-power isn't installed.
+if command -v system76-power >/dev/null 2>&1; then
+  alias gpu-int='sudo system76-power graphics integrated'
+  alias gpu-nvid='sudo system76-power graphics nvidia'
+  alias gpu-hybr='sudo system76-power graphics hybrid'
+  alias gpu-stat='system76-power graphics; system76-power profile'
+fi
+
+# --- 5. Standalone tools (starship/zoxide/direnv/mise/atuin) -------------------
 command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"
 command -v zoxide   >/dev/null 2>&1 && eval "$(zoxide init zsh)"
 command -v direnv   >/dev/null 2>&1 && eval "$(direnv hook zsh)"

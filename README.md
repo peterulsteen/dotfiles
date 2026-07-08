@@ -15,9 +15,10 @@ sh -c "$(curl -fsLS get.chezmoi.io)" -- -b ~/.local/bin
 # 2. Initialize, fetch, and apply this repo
 ~/.local/bin/chezmoi init --apply peterulsteen/dotfiles
 
-# 3. Set fish as the login shell
-echo (which fish) | sudo tee -a /etc/shells
-chsh -s (which fish)
+# 3. Set zsh as the login shell (macOS already ships /bin/zsh; Linux installs it
+#    in the bootstrap, so run this after the first apply completes)
+grep -qxF "$(command -v zsh)" /etc/shells || command -v zsh | sudo tee -a /etc/shells
+chsh -s "$(command -v zsh)"
 ```
 
 On first run chezmoi prompts me for a few per-machine values — name, email, signing-key path, whether the machine is personal, and where my work repos live. They get written to `~/.config/chezmoi/chezmoi.toml` and never touch this repo.
@@ -34,7 +35,7 @@ This is the decision I keep coming back to. Every tool lives in **exactly one** 
 |---|---|---|---|
 | **1. Self-managing** | The tool's own installer / `<tool> self update` | `mise`, `uv`, `rustup`, `claude`, `codex` | Things that ship fast and update themselves well. I bootstrap them once and leave them alone. |
 | **2. mise** | `~/.config/mise/config.toml` | `node`, `go`, `terraform`, `opentofu`, `gh`, `lazygit`, `neovim`, `fzf`, `ripgrep`, `jq`, `fd`, `bat`, `eza`, `zoxide`, `atuin`, `starship`, `zellij`, `just`, `direnv`, `delta`, `gitleaks`, `stylua`, `selene`, `tree-sitter`, `shellcheck`, `actionlint`, `tealdeer` | Cross-platform single-binary tools and language runtimes. One declarative file, same on all four OSs. |
-| **3. Native pkg mgr** | `brew` / `apt` / `pacman` / `dnf` | `fish` (login shell), `ghostty`, `gnupg`, `podman`, `podman-compose`, fonts, `coreutils`, `gnu-getopt`, `awscli`, `google-cloud-cli`, `pass` | Things that need real OS integration: login shells, terminal emulators, system crypto, daemons, GUI apps, fonts. |
+| **3. Native pkg mgr** | `brew` / `apt` / `pacman` / `dnf` | `zsh` (login shell; built-in on macOS), `sheldon`, `ghostty`, `gnupg`, `podman`, `podman-compose`, fonts, `coreutils`, `gnu-getopt`, `awscli`, `google-cloud-cli`, `pass` | Things that need real OS integration: login shells, terminal emulators, system crypto, daemons, GUI apps, fonts. |
 
 My one hard rule: **a tool gets exactly one layer.** No `claude` in both `~/.local/bin` and a Brewfile, no `node` in both mise and brew, no `rust` in mise (rustup owns it). When two layers fight over the same tool, I get silent drift — so I don't let them.
 
@@ -48,9 +49,18 @@ My one hard rule: **a tool gets exactly one layer.** No `claude` in both `~/.loc
 | Rust | `rustup` | Per-project pinning via `rust-toolchain.toml`. |
 | Lua | none | I use the LuaJIT bundled with Neovim and install the dev tools (stylua, selene, lua-language-server) through mise. |
 
+## Shell
+
+**zsh everywhere**, POSIX-clean. I ran fish for a while and liked it, but a login shell that can't parse a POSIX heredoc quietly breaks any GUI tool that spawns `$SHELL` and pipes it a script (an editor's "run this command", `cron`, an agent runner). zsh gives me the fish features I actually used without that tax:
+
+- **Autosuggestions + syntax highlighting + fish-style abbreviations** via [sheldon](https://sheldon.cli.rs) (`dot_config/sheldon/plugins.toml`): `zsh-autosuggestions`, `fast-syntax-highlighting`, `zsh-completions`, and [`zsh-abbr`](https://github.com/olets/zsh-abbr). sheldon git-clones each plugin, so the set is byte-identical on every OS regardless of what brew/apt/pacman ship. The standalone niceties (starship, atuin, zoxide, direnv) are Layer-2 binaries, not plugins.
+- **One environment file** — `dot_config/shell/env.sh` holds all env + PATH in strict POSIX and is sourced by both zsh (`dot_zprofile`) and bash (`dot_profile`/`dot_bashrc`), so the two never drift.
+- **Workstations vs. servers**: workstations get the full plugin stack; lean servers/VMs (chosen at `chezmoi init` via `isWorkstation`) get plain bash with just the shared env and a few aliases — no plugin manager to install on a box I SSH into once a month.
+- **Machine-conditional bits are runtime-guarded, not templated** — the `docker`→`podman` shim and Pop!_OS GPU aliases key off `command -v`, so one config file stays correct on every machine without chezmoi `.tmpl` branches.
+
 ## Containers
 
-I run **podman** everywhere — `podman compose` for compose files. I alias `docker` → `podman` in fish so the muscle memory still works, and on macOS the bootstrap does the one-time `podman machine init && podman machine start` for me.
+I run **podman** everywhere — `podman compose` for compose files. My shell aliases `docker` → `podman` so the muscle memory still works — but it's a *guarded* alias, skipped when a real `docker` binary is present (e.g. Dory on the work Mac), so it never shadows the real thing. On macOS the bootstrap does the one-time `podman machine init && podman machine start` for me.
 
 ## Terminal sessions (Zellij)
 
@@ -58,7 +68,7 @@ I moved to [Zellij](https://zellij.dev) (Layer 2 / mise) after one too many rebo
 
 - `config.kdl` is a *minimal override*, not a `clear-defaults` dump — I want upstream's default improvements to keep reaching me on upgrade.
 - `session_serialization` + `serialize_pane_viewport` persist each session's tabs, panes, cwds, running commands, and on-screen scrollback. After a reboot, `zellij ls` shows the session as `EXITED`; I resurrect it from the session manager (`Ctrl+o` then `w`) and it rebuilds the layout and re-runs each pane's command.
-- fish auto-attaches to a persistent `main` session on interactive shells — guarded so it never nests inside Zellij, an IDE terminal (VS Code/Cursor, JetBrains), or a non-interactive shell. Opt out for a shell with `set -gx ZELLIJ_NO_AUTOSTART 1`.
+- **Ghostty** launches straight into a persistent `main` session via its `command = zellij attach --create main` — so a new window drops me back into my running workspace instead of a bare prompt. This lives in Ghostty's config, not the shell rc, so it *only* fires in Ghostty; editor terminals (VS Code/Cursor, Superset, JetBrains) get a plain zsh because they never run that command.
 - `layouts/claude.kdl` (`zellij --layout claude`) opens a Claude Code pane via `claude --continue`, so a resurrected session drops me back into the prior conversation, plus `edit` (nvim) and `shell` tabs.
 - **Neovim ⇄ Zellij navigation:** `Ctrl+h/j/k/l` moves across both Neovim splits and Zellij panes, via [vim-zellij-navigator](https://github.com/hiasr/vim-zellij-navigator) on the Zellij side and [smart-splits.nvim](https://github.com/mrjones2014/smart-splits.nvim) on the Neovim side.
 
@@ -77,8 +87,12 @@ I moved to [Zellij](https://zellij.dev) (Layer 2 / mise) after one too many rebo
 │   ├── arch.txt                               pacman package list
 │   ├── debian.txt                             apt package list (Pop!_OS, Ubuntu)
 │   └── fedora.txt                             dnf package list
+├── dot_zprofile / dot_zshrc                   zsh login env + interactive config
+├── dot_bashrc / dot_profile                   bash config for lean servers/VMs
 ├── dot_config/                                → ~/.config/
-│   ├── fish/                                  fish shell (config.fish + conf.d/)
+│   ├── shell/env.sh                           shared POSIX env + PATH (zsh + bash)
+│   ├── sheldon/plugins.toml                   zsh plugin manifest (sheldon)
+│   ├── zsh-abbr/user-abbreviations            fish-style abbreviations for zsh
 │   ├── ghostty/                               terminal emulator config
 │   ├── git/
 │   │   ├── config.tmpl                        git config (per-machine email/signing + work includeIf)

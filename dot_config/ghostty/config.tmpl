@@ -4,9 +4,9 @@ font-feature = calt
 font-feature = liga
 
 # Launch into a persistent Zellij session (attach-or-create "main") instead of a
-# bare shell. This lives here, not in fish, so the multiplexer ONLY starts in
-# Ghostty -- integrated terminals in editors (VS Code, Cursor, Superset, JetBrains)
-# get a plain fish shell because they never run this command.
+# bare shell. This lives here, not in the shell rc, so the multiplexer ONLY
+# starts in Ghostty -- integrated terminals in editors (VS Code, Cursor,
+# Superset, JetBrains) get a plain shell because they never run this command.
 #
 # Absolute path: GUI-launched Ghostty may inherit a minimal PATH that omits
 # package-manager bin dirs, so we hardcode the known location per OS.

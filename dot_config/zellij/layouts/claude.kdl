@@ -13,7 +13,7 @@
 layout {
     tab name="claude" focus=true {
         pane name="claude" {
-            command "fish"
+            command "zsh"
             args "-c" "claude --continue 2>/dev/null; or claude"
         }
     }

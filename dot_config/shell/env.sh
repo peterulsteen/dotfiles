@@ -51,7 +51,27 @@ fi
 # Guarded: only override if the socket actually exists (1Password installed).
 [ -S "$HOME/.1password/agent.sock" ] && SSH_AUTH_SOCK="$HOME/.1password/agent.sock" && export SSH_AUTH_SOCK
 
-# --- Editor + tooling env (mirrors the fish config). ---
+# --- Google Cloud CLI ---
+# CLOUDSDK_* env OVERRIDES ~/.config/gcloud, so config lives here as code (that
+# dir holds credentials and is .chezmoiignore'd). Opt out of usage reporting
+# (also suppresses the first-run prompt).
+export CLOUDSDK_CORE_DISABLE_USAGE_REPORTING=true
+# macOS cask puts core binaries on PATH, but `gcloud components install` extras
+# (e.g. gke-gcloud-auth-plugin) land in the SDK's own bin. Add when present;
+# no-op on Linux (there components ship as separate OS packages).
+[ -d /opt/homebrew/share/google-cloud-sdk/bin ] && \
+  PATH="/opt/homebrew/share/google-cloud-sdk/bin:$PATH" && export PATH
+
+# --- Rootless Podman socket (Pop!_OS / Linux) ---
+# Point Docker-expecting tools (Testcontainers, kind) at the rootless podman
+# socket without running as root. Guarded on the socket, so it's a no-op on
+# macOS (podman machine uses a different socket) and on boxes without podman.
+if [ -S "${XDG_RUNTIME_DIR:-}/podman/podman.sock" ]; then
+  export DOCKER_HOST="unix://$XDG_RUNTIME_DIR/podman/podman.sock"
+  export KIND_EXPERIMENTAL_PROVIDER=podman
+fi
+
+# --- Editor + tooling env ---
 export EDITOR=nvim
 export VISUAL=nvim
 export BAT_THEME="TwoDark"

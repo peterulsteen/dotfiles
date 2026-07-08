@@ -1,5 +1,5 @@
 # dnf package list for Fedora (Layer 3 tools)
-fish
+zsh
 podman
 podman-compose
 gnupg2

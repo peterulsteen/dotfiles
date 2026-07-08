@@ -1,7 +1,7 @@
 # apt package list for Pop!_OS / Ubuntu / Debian (Layer 3 tools)
 # Installed by run_once_before_10-install-package-managers.sh.tmpl
 # One package per line; lines starting with # are ignored.
-fish
+zsh
 podman
 podman-compose
 gnupg

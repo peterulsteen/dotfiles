@@ -1,5 +1,5 @@
 # pacman package list for Arch / Omarchy (Layer 3 tools)
-fish
+zsh
 podman
 podman-compose
 gnupg

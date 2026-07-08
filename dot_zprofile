@@ -1,9 +1,9 @@
 # zsh login shell.
 #
-# zsh is the POSIX login shell so GUI tools that spawn $SHELL and feed it POSIX
-# syntax (Superset's `claude "$(cat <<'EOF' ... EOF)"` heredoc, cron, editors)
-# get a shell that can parse it. Interactive fish is launched from .zshrc, but
-# only inside Ghostty/zellij.
+# zsh is the POSIX login + interactive shell on every machine. Being POSIX means
+# GUI tools that spawn $SHELL and feed it POSIX syntax (Superset's
+# `claude "$(cat <<'EOF' ... EOF)"` heredoc, cron, editors) get a shell that can
+# parse it -- the reason this repo moved off fish.
 #
 # Runs after /etc/zprofile (path_helper), so the PATH set in env.sh wins.
 # All environment lives in the shared POSIX file so zsh and bash stay in sync.

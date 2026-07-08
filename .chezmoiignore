@@ -13,7 +13,6 @@ LICENSE
 # --- Binary / machine-local runtime state ---
 .DS_Store
 **/.DS_Store
-.config/fish/fish_variables
 
 # --- Secret-bearing paths: never let `chezmoi add` pull these into a PUBLIC repo. ---
 # Belt-and-suspenders alongside the gitleaks pre-commit hook + GitHub push protection.
@@ -58,5 +57,4 @@ packages
 {{- if not $ws }}
 .config/sheldon
 .config/zsh-abbr
-.config/fish
 {{- end }}

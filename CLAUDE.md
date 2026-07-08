@@ -23,7 +23,7 @@ Decision tree:
 2. Does it need OS integration (login shell, terminal, daemon, font, GUI app)? → **Layer 3.** Add to `Brewfile.darwin.tmpl` AND each of `packages/{arch,debian,fedora}.txt` (using each pkg manager's name for the tool).
 3. Otherwise (single-binary CLI, language runtime, dev utility) → **Layer 2.** Add to `dot_config/mise/config.toml.tmpl`.
 
-If you're tempted to add the same tool to two places — stop. Pick one. PATH order in `config.fish` puts `~/.local/bin` first, then `~/.local/share/mise/shims/`, then OS pkg manager paths, but relying on this to mask duplicates causes drift.
+If you're tempted to add the same tool to two places — stop. Pick one. PATH order in `dot_config/shell/env.sh` puts `~/.local/bin` first, then `~/.local/share/mise/shims/`, then OS pkg manager paths, but relying on this to mask duplicates causes drift.
 
 ## Per-language runtime rules (do not violate)
 
@@ -47,7 +47,7 @@ If you're tempted to add the same tool to two places — stop. Pick one. PATH or
   - `20-install-self-managers` — install Layer 1 tools (mise, uv, rustup, claude, codex)
   - `30-mise-install` — `mise install` to materialize Layer 2 tools (re-runs when `mise.toml` changes)
   - `40-macos-defaults` — macOS system tweaks (skipped on Linux via .chezmoiignore)
-- **Don't sync `fish_variables`** — it's binary state. Universal vars and abbreviations are declared as code in `dot_config/fish/conf.d/*.fish` so they live in version control.
+- **Shell layout**: `dot_zprofile` (login env, sources `env.sh`) + `dot_zshrc` (interactive: sheldon plugins, guarded aliases, tool init) for zsh; `dot_bashrc`/`dot_profile` for lean servers. All environment + PATH lives in `dot_config/shell/env.sh` (strictly POSIX, sourced by both zsh and bash). Abbreviations are code in `dot_config/zsh-abbr/user-abbreviations`; plugins are declared in `dot_config/sheldon/plugins.toml`.
 - **Don't sync sensitive dirs** — `~/.aws/`, `~/.docker/`, `~/.ssh/`, `~/.gnupg/`, `~/.codex/`, `~/.cursor/`, `~/.copilot/`, `~/.cagent/`, `~/.claude.json`. These are listed in `.chezmoiignore` and must stay there.
 - **`.chezmoiignore` matches TARGET paths**, not source paths. Use `.config/foo`, never `dot_config/foo`; strip the `.tmpl` suffix (`Brewfile.darwin`, not `Brewfile.darwin.tmpl`). A source-style pattern silently matches nothing — dangerous for a secret ignore list. Verify with `chezmoi managed`.
 - **Secret-scanning is defense-in-depth** (this repo is public): `.chezmoiignore` blocks `chezmoi add` of secret-bearing files; a global gitleaks pre-commit hook (`dot_config/git/hooks/executable_pre-commit`, wired via `core.hooksPath`) blocks commits; `.github/workflows/gitleaks.yml` scans history in CI; GitHub push protection is the server-side backstop. gitleaks is a Layer-2 (mise) tool; v8.30+ dropped `protect`/`detect` — use `gitleaks git --staged`. Never weaken these guards to make a commit pass; fix the secret or use an explicit allowlist.
@@ -62,7 +62,7 @@ If you're tempted to add the same tool to two places — stop. Pick one. PATH or
 3. If Layer 3: add to `Brewfile.darwin.tmpl` *and* each Linux distro file in `packages/`.
 
 ### Changing a config file
-1. Edit the file in this repo (e.g., `dot_config/fish/config.fish`).
+1. Edit the file in this repo (e.g., `dot_zshrc` or `dot_config/shell/env.sh`).
 2. `chezmoi apply` on each machine to push the change to `~/`.
 3. `git commit` and push.
 
@@ -82,9 +82,9 @@ If you're tempted to add the same tool to two places — stop. Pick one. PATH or
 **DON'T:**
 - Don't add `python` or `rust` to `mise.toml` (uv and rustup own them)
 - Don't add Layer-1 self-managers (`claude`, `codex`, `uv`, `mise`, `rustup`) to any package list
-- Don't sync `fish_variables`, `lazy-lock.json` exception aside, or any credential file
+- Don't sync any credential file (`lazy-lock.json` is a deliberate exception — see above)
 - Don't put Linuxbrew anywhere — Linux uses native package managers, not Homebrew
-- Don't suggest Nix, ansible, or shell-rc-frameworks (zinit, oh-my-fish). The owner has chosen this stack deliberately to avoid those layers of abstraction.
+- Don't suggest Nix, ansible, or shell-rc-frameworks (oh-my-zsh, prezto, zinit). The owner has chosen this stack deliberately (zsh + sheldon, minimal) to avoid those layers of abstraction.
 
 ## Repo layout reminder
 
