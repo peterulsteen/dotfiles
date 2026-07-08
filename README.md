@@ -23,6 +23,8 @@ chsh -s "$(command -v zsh)"
 
 On first run chezmoi prompts me for a few per-machine values — name, email, signing-key path, whether the machine is personal, and where my work repos live. They get written to `~/.config/chezmoi/chezmoi.toml` and never touch this repo.
 
+> **Fresh macOS, first run:** the bootstrap installs Homebrew, which needs sudo to create `/opt/homebrew`, so it prompts for my password once — the script primes `sudo` before the (otherwise non-interactive) install to make that a clean prompt rather than a `Need sudo access on macOS` abort. Run `chezmoi init --apply` from a real terminal so it can ask. If you're somewhere it can't prompt (no TTY), run `sudo -v` first, or pre-install Homebrew (`/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`) and then `chezmoi apply`.
+
 From there chezmoi runs my bootstrap scripts on its own: it installs the OS-native package manager (or just its packages on Linux), then the self-managing tools (`mise`, `uv`, `rustup`, `claude`), then `mise install` to materialize every CLI and language runtime. `codex` comes in last via `npm install -g`, once mise has provided Node.
 
 > One gotcha I hit: a fresh `mise install` pulls ~25 tools from GitHub releases and will blow through the unauthenticated API rate limit. Before bootstrapping a new machine, `export GITHUB_TOKEN=$(gh auth token)` (or any no-scope PAT). If a tool ever resolves to a bogus `vlatest` tag, that's the poisoned-cache symptom — `mise cache clear` and retry.

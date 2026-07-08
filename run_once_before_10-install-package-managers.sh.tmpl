@@ -42,6 +42,18 @@ install_homebrew_if_missing() {
         log "Homebrew already installed: $(brew --version | head -1)"
         return
     fi
+    # On a fresh Mac /opt/homebrew doesn't exist, so Homebrew needs sudo to create
+    # and chown it. We run the installer NONINTERACTIVE (below) to skip its "press
+    # RETURN" prompt, but that also switches its sudo check to `sudo -n`, which
+    # ABORTS with "Need sudo access on macOS" if no sudo credential is cached --
+    # even for admins, because `-n` refuses to prompt. So prime the sudo timestamp
+    # here first (one password prompt); the non-interactive install then proceeds.
+    log "Homebrew needs sudo to create /opt/homebrew — priming sudo (enter your password if asked)..."
+    if ! sudo -v; then
+        die "Could not obtain sudo. Re-run in an interactive terminal, or install Homebrew manually first:
+  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"
+then re-run \`chezmoi apply\`."
+    fi
     log "Installing Homebrew..."
     NONINTERACTIVE=1 /bin/bash -c \
         "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
