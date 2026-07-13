@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Rotating off-cache backup of Zellij session layouts. See
+     ~/.local/bin/zellij-layout-backup and the repo README (Zellij hardening).
+     Loaded/reloaded by run_onchange_after_50-reload-launchagents.sh.tmpl. -->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.peterulsteen.zellij-layout-backup</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>{{ .chezmoi.homeDir }}/.local/bin/zellij-layout-backup</string>
+    </array>
+
+    <!-- Snapshot every 3 minutes; the script no-ops when nothing changed. -->
+    <key>StartInterval</key>
+    <integer>180</integer>
+
+    <!-- Take one immediately on login so a same-session crash is already covered. -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- Be a good citizen: background priority, throttled disk I/O. -->
+    <key>ProcessType</key>
+    <string>Background</string>
+    <key>LowPriorityIO</key>
+    <true/>
+    <key>Nice</key>
+    <integer>10</integer>
+
+    <key>StandardOutPath</key>
+    <string>{{ .chezmoi.homeDir }}/.zellij-layout-backups/launchd.log</string>
+    <key>StandardErrorPath</key>
+    <string>{{ .chezmoi.homeDir }}/.zellij-layout-backups/launchd.log</string>
+</dict>
+</plist>

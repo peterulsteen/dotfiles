@@ -70,9 +70,10 @@ I moved to [Zellij](https://zellij.dev) (Layer 2 / mise) after one too many rebo
 
 - `config.kdl` is a *minimal override*, not a `clear-defaults` dump — I want upstream's default improvements to keep reaching me on upgrade.
 - `session_serialization` + `serialize_pane_viewport` persist each session's tabs, panes, cwds, running commands, and on-screen scrollback. After a reboot, `zellij ls` shows the session as `EXITED`; I resurrect it from the session manager (`Ctrl+o` then `w`) and it rebuilds the layout and re-runs each pane's command.
-- **Ghostty** launches straight into a persistent `main` session via its `command = zellij attach --create main` — so a new window drops me back into my running workspace instead of a bare prompt. This lives in Ghostty's config, not the shell rc, so it *only* fires in Ghostty; editor terminals (VS Code/Cursor, Superset, JetBrains) get a plain zsh because they never run that command.
+- **Ghostty** opens a plain zsh; I start Zellij explicitly (`zellij attach main`, or `zj-restore` to resurrect from a backup). It *used* to auto-run `command = zellij attach --create main`, but auto-attaching to one fixed session made post-crash recovery awkward — a fresh window forced me back into whatever state `main` was in, with no easy path to a plain shell or a different session — so I dropped it.
 - `layouts/claude.kdl` (`zellij --layout claude`) opens a Claude Code pane via `claude --continue`, so a resurrected session drops me back into the prior conversation, plus `edit` (nvim) and `shell` tabs.
 - **Neovim ⇄ Zellij navigation:** `Ctrl+h/j/k/l` moves across both Neovim splits and Zellij panes, via [vim-zellij-navigator](https://github.com/hiasr/vim-zellij-navigator) on the Zellij side and [smart-splits.nvim](https://github.com/mrjones2014/smart-splits.nvim) on the Neovim side.
+- **Crash-proofing the snapshot (belt to resurrection's suspenders).** Zellij keeps only *one* serialized snapshot per session and overwrites it every `serialization_interval` — so a crash mid-write, or a session that sheds tabs under memory pressure and then re-serializes the shrunken state, can destroy the only good copy. (Learned the hard way: a runaway Ghostty OOM clobbered a ~20-tab session down to 9.) Two guards close that hole: a launchd agent (`com.peterulsteen.zellij-layout-backup`) runs `~/.local/bin/zellij-layout-backup` every 3 min to tar the whole `session_info` tree into a rotating, off-cache dir (`~/.zellij-layout-backups`, content-hashed so idle minutes don't churn identical archives); and `zj-restore` fzf-picks an archive + session and relaunches that exact layout as a fresh session. A bad overwrite now costs at most a few minutes of tab structure, always recoverable from an earlier archive. macOS-only for now (the plist is `.chezmoiignore`d off Linux; a systemd user timer is the Linux TODO).
 
 > **A privacy trade-off I made consciously:** `serialize_pane_viewport true` writes terminal *contents* to the local cache dir (`~/.cache/zellij` on Linux, `~/Library/Caches/org.Zellij-Contributors.Zellij` on macOS). It's local-only — never synced, never in this repo — but it's plaintext on disk, so I cap how much with `scrollback_lines_to_serialize`.
 
@@ -91,6 +92,12 @@ I moved to [Zellij](https://zellij.dev) (Layer 2 / mise) after one too many rebo
 │   └── fedora.txt                             dnf package list
 ├── dot_zprofile / dot_zshrc                   zsh login env + interactive config
 ├── dot_bashrc / dot_profile                   bash config for lean servers/VMs
+├── dot_local/bin/                             → ~/.local/bin/ (on PATH)
+│   ├── zellij-layout-backup                   rotating off-cache backup of Zellij session layouts
+│   └── zj-restore                             fzf picker to resurrect a session from a backup archive
+├── Library/LaunchAgents/                      → ~/Library/LaunchAgents/ (macOS only)
+│   └── com.peterulsteen.zellij-layout-backup.plist.tmpl   runs the backup every 3 min
+├── run_onchange_after_50-reload-launchagents.sh.tmpl      (re)loads user LaunchAgents (mac-only body)
 ├── dot_config/                                → ~/.config/
 │   ├── shell/env.sh                           shared POSIX env + PATH (zsh + bash)
 │   ├── sheldon/plugins.toml                   zsh plugin manifest (sheldon)

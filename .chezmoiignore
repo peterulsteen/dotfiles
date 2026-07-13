@@ -43,6 +43,7 @@ LICENSE
 # --- macOS-only files: ignore on every non-darwin machine ---
 {{- if ne .chezmoi.os "darwin" }}
 Brewfile.darwin
+Library
 {{- end }}
 
 # --- Linux-only files: ignore on darwin ---

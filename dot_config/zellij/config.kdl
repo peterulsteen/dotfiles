@@ -20,6 +20,10 @@ session_serialization true            // (default true; set explicitly to docume
 serialize_pane_viewport true          // also restore on-screen scrollback, not just the prompt
 scrollback_lines_to_serialize 10000   // bound disk + serialization cost (0 = entire scrollback)
 on_force_close "detach"               // closing the last client detaches, keeping the session resurrectable
+serialization_interval 60             // re-serialize at most every 60s, so the on-disk snapshot is never badly stale.
+                                      // Defense-in-depth only: Zellij keeps ONE snapshot per session and overwrites it,
+                                      // so a crash mid-write can still lose it — the off-cache rotating backup
+                                      // (~/.local/bin/zellij-layout-backup via launchd) is the real safety net.
 
 // --- Seamless Neovim <-> Zellij navigation (vim-zellij-navigator) ------------
 // Pairs with smart-splits.nvim on the Neovim side (see lua/config/keymaps.lua).
