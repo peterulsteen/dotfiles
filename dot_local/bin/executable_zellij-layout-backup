@@ -1,0 +1,64 @@
+#!/bin/sh
+# zellij-layout-backup — rotating, off-cache snapshot of Zellij session state.
+#
+# WHY: Zellij keeps exactly ONE serialized snapshot per session in its cache dir
+# and overwrites it on every serialization tick. A crash mid-write (or a session
+# that loses tabs under memory pressure, then re-serializes the shrunken state)
+# destroys the only good copy. This script periodically copies the whole
+# session_info tree into a rotating backup dir so a bad overwrite can never wipe
+# your tab layout — you can always resurrect from an earlier archive (see
+# `zj-restore`).
+#
+# Invoked every few minutes by a launchd agent on macOS
+# (com.peterulsteen.zellij-layout-backup) — but is OS-agnostic and safe to run by
+# hand or from a systemd timer on Linux.
+#
+# Tunables via env: ZJ_BACKUP_DIR, ZJ_BACKUP_KEEP, ZELLIJ_CACHE.
+set -eu
+
+keep="${ZJ_BACKUP_KEEP:-100}"
+dest="${ZJ_BACKUP_DIR:-$HOME/.zellij-layout-backups}"
+
+# Resolve the Zellij cache dir per-OS (session serialization lives here, never in
+# ~/.config/zellij). Allow an explicit override for unusual setups.
+if [ -n "${ZELLIJ_CACHE:-}" ]; then
+    cache="$ZELLIJ_CACHE"
+elif [ "$(uname -s)" = "Darwin" ]; then
+    cache="$HOME/Library/Caches/org.Zellij-Contributors.zellij"
+else
+    cache="${XDG_CACHE_HOME:-$HOME/.cache}/zellij"
+fi
+
+# The session_info dir sits under a version-contract subdir (e.g.
+# contract_version_1). Glob for it rather than hardcoding the contract version.
+session_info=""
+for d in "$cache"/*/session_info "$cache"/session_info; do
+    [ -d "$d" ] && { session_info="$d"; break; }
+done
+[ -n "$session_info" ] || { echo "zellij-layout-backup: no session_info under $cache" >&2; exit 0; }
+
+mkdir -p "$dest"
+
+# Content-hash the tab STRUCTURE (all session-layout.kdl files) so we only make a
+# new archive when something actually changed — idle minutes don't churn out 100
+# identical tarballs, which keeps effective history long.
+hash="$(cat "$session_info"/*/session-layout.kdl 2>/dev/null | cksum | awk '{print $1"-"$2}')"
+[ -n "$hash" ] || exit 0                      # nothing serialized yet
+last_file="$dest/.last-hash"
+[ -f "$last_file" ] && [ "$hash" = "$(cat "$last_file")" ] && exit 0   # unchanged
+
+ts="$(date +%Y%m%d-%H%M%S)"
+archive="$dest/session_info-$ts.tgz"
+# Archive layouts + metadata + initial_contents so an archive is fully
+# resurrectable, not just structurally readable.
+tar czf "$archive" -C "$(dirname "$session_info")" "$(basename "$session_info")" 2>/dev/null || {
+    echo "zellij-layout-backup: tar failed" >&2; exit 1; }
+printf '%s\n' "$hash" > "$last_file"
+
+# Rotate: keep the newest $keep archives, delete the rest.
+# shellcheck disable=SC2012
+ls -1t "$dest"/session_info-*.tgz 2>/dev/null | tail -n "+$((keep + 1))" | while IFS= read -r old; do
+    rm -f "$old"
+done
+
+exit 0

@@ -1,0 +1,30 @@
+#!/bin/sh
+# Load / reload user LaunchAgents managed by this repo. Runs after `chezmoi apply`
+# and re-runs whenever a managed plist's content changes (the hashes below force
+# a re-render when a plist template is edited).
+{{ if eq .chezmoi.os "darwin" -}}
+set -eu
+
+# Re-run trigger — changes when the plist template changes:
+# zellij-layout-backup plist sha256: {{ include "Library/LaunchAgents/com.peterulsteen.zellij-layout-backup.plist.tmpl" | sha256sum }}
+
+domain="gui/$(id -u)"
+
+reload_agent() {
+    label="$1"
+    plist="$HOME/Library/LaunchAgents/$label.plist"
+    [ -f "$plist" ] || { echo "reload-launchagents: missing $plist" >&2; return 0; }
+    # bootout is idempotent; ignore "not loaded" on first install.
+    launchctl bootout "$domain/$label" 2>/dev/null || true
+    launchctl bootstrap "$domain" "$plist"
+    echo "reload-launchagents: (re)loaded $label" >&2
+}
+
+# Ensure the backup dir exists before launchd opens its StandardOut log there.
+mkdir -p "$HOME/.zellij-layout-backups"
+
+reload_agent com.peterulsteen.zellij-layout-backup
+{{- else -}}
+# Not macOS — no launchd. (A systemd user timer would go here for Linux.)
+:
+{{- end }}

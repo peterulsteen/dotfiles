@@ -1,0 +1,69 @@
+#!/bin/sh
+# zj-restore — resurrect a Zellij session from a rotating layout backup.
+#
+# Companion to `zellij-layout-backup`. Pick a backup archive, then a session
+# inside it (its tab names are previewed), and it relaunches that exact layout as
+# a fresh session — the escape hatch for when Zellij's own single snapshot got
+# clobbered by a crash. Requires fzf for the picker (falls back to a numbered
+# menu). Run from a PLAIN shell, not inside a Zellij session.
+#
+# Usage: zj-restore [archive.tgz]
+set -eu
+
+dest="${ZJ_BACKUP_DIR:-$HOME/.zellij-layout-backups}"
+
+if [ -n "${ZELLIJ:-}" ]; then
+    echo "zj-restore: you're inside a Zellij session — '-n' would add tabs to it, not" >&2
+    echo "start a clean session. Detach first (Ctrl+o then d), then re-run." >&2
+    exit 1
+fi
+
+have_fzf() { command -v fzf >/dev/null 2>&1; }
+
+# ---- 1. choose the archive --------------------------------------------------
+archive="${1:-}"
+if [ -z "$archive" ]; then
+    list="$(ls -1t "$dest"/session_info-*.tgz 2>/dev/null || true)"
+    [ -n "$list" ] || { echo "zj-restore: no backups in $dest" >&2; exit 1; }
+    if have_fzf; then
+        archive="$(printf '%s\n' "$list" | fzf --prompt='backup archive > ' \
+            --preview 'tar tzf {} | sed -n "s#.*/\([^/]*\)/session-layout.kdl#  \1#p"' \
+            --preview-window=right,50%)"
+    else
+        echo "Available backups:" >&2
+        printf '%s\n' "$list" | cat -n >&2
+        printf 'Pick a number: ' >&2; read -r n
+        archive="$(printf '%s\n' "$list" | sed -n "${n}p")"
+    fi
+fi
+[ -n "${archive:-}" ] && [ -f "$archive" ] || { echo "zj-restore: no archive chosen" >&2; exit 1; }
+
+# ---- 2. extract and choose the session --------------------------------------
+tmp="$(mktemp -d "${TMPDIR:-/tmp}/zj-restore.XXXXXX")"
+trap 'rm -rf "$tmp"' EXIT INT TERM
+tar xzf "$archive" -C "$tmp"
+
+# session dirs = any dir holding a session-layout.kdl
+sessions="$(find "$tmp" -name session-layout.kdl -print 2>/dev/null \
+    | sed 's#/session-layout.kdl$##' | sort)"
+[ -n "$sessions" ] || { echo "zj-restore: no sessions in archive" >&2; exit 1; }
+
+if have_fzf; then
+    chosen="$(printf '%s\n' "$sessions" | fzf --prompt='session > ' --with-nth=-1 --delimiter=/ \
+        --preview 'grep -oE "tab name=\"[^\"]*\"" {}/session-layout.kdl | sed "s/tab name=/  /"' \
+        --preview-window=right,50%)"
+else
+    echo "Sessions in archive:" >&2
+    printf '%s\n' "$sessions" | sed 's#.*/##' | cat -n >&2
+    printf 'Pick a number: ' >&2; read -r n
+    chosen="$(printf '%s\n' "$sessions" | sed -n "${n}p")"
+fi
+[ -n "${chosen:-}" ] || { echo "zj-restore: no session chosen" >&2; exit 1; }
+
+name="$(basename "$chosen")-restored"
+echo "zj-restore: launching session '$name' from $(basename "$archive")" >&2
+
+# cd into the session dir so relative contents_file="initial_contents_N" (restored
+# scrollback) resolves; -n starts a NEW session from the layout.
+cd "$chosen"
+exec zellij -s "$name" -n "$chosen/session-layout.kdl"

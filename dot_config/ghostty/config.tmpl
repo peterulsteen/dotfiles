@@ -3,17 +3,22 @@ font-family = JetBrainsMono Nerd Font
 font-feature = calt
 font-feature = liga
 
-# Launch into a persistent Zellij session (attach-or-create "main") instead of a
-# bare shell. This lives here, not in the shell rc, so the multiplexer ONLY
-# starts in Ghostty -- integrated terminals in editors (VS Code, Cursor,
-# Superset, JetBrains) get a plain shell because they never run this command.
-#
-# Absolute path: GUI-launched Ghostty may inherit a minimal PATH that omits
-# package-manager bin dirs, so we hardcode the known location per OS.
-# Exiting Zellij closes the window (no shell to fall back to) -- detach with the
-# Zellij keybind to keep the session alive.
-{{ if eq .chezmoi.os "darwin" -}}
-command = /opt/homebrew/bin/zellij attach --create main
-{{- else -}}
-command = {{ .chezmoi.homeDir }}/.local/share/mise/shims/zellij attach --create main
-{{- end }}
+# --- Memory bounds (defensive) ----------------------------------------------
+# Explicit, modest caps on the two per-surface buffers that can grow with heavy
+# agent output. NOTE: these are ~10MB-scale limits — they do NOT explain a 50GB
+# Ghostty (2026-07 incident), which points at a leak or runaway rather than
+# scrollback. If a multi-GB Ghostty recurs, capture `leaks`/Activity Monitor and
+# file it upstream; a config line can't cap an actual leak. Zellij's own
+# scrollback is bounded separately in ~/.config/zellij/config.kdl.
+scrollback-limit = 10000000
+image-storage-limit = 320000000
+
+# NOTE: Ghostty no longer auto-launches Zellij. It previously ran
+# `command = zellij attach --create main`, but auto-attaching to a single fixed
+# session made post-crash recovery awkward (a fresh window forced you back into
+# whatever state "main" was in, with no easy path to a plain shell or a different
+# session). Start Zellij explicitly instead:
+#   zellij attach main      # or your session of choice
+#   zj-restore              # resurrect a session from a rotating backup archive
+# Editor terminals (VS Code/Cursor, Superset, JetBrains) already got a plain
+# shell before and still do.
