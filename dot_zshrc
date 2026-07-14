@@ -42,10 +42,14 @@ if command -v system76-power >/dev/null 2>&1; then
   alias gpu-stat='system76-power graphics; system76-power profile'
 fi
 
-# --- 5. Standalone tools (starship/zoxide/direnv/mise/atuin) -------------------
+# --- 5. Standalone tools (starship/zoxide/direnv/mise/carapace/atuin) ----------
 command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"
 command -v zoxide   >/dev/null 2>&1 && eval "$(zoxide init zsh)"
 command -v direnv   >/dev/null 2>&1 && eval "$(direnv hook zsh)"
 command -v mise     >/dev/null 2>&1 && eval "$(mise activate zsh)"
+# Runs after compinit (sequenced inside plugins.toml, sec. 3) since it registers
+# compdef bindings per-command. Bridges gh/kubectl/docker/etc. with no per-tool
+# completion file to generate or refresh -- see dot_config/mise/config.toml.tmpl.
+command -v carapace >/dev/null 2>&1 && eval "$(carapace _carapace zsh)"
 # atuin owns Ctrl-R + up-arrow history; load last so it wins the keybindings.
 command -v atuin    >/dev/null 2>&1 && eval "$(atuin init zsh)"
