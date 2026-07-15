@@ -41,6 +41,13 @@ cask "gcloud-cli"
 # --- Terminal emulator ---
 cask "ghostty"
 
+# --- Menu-bar system monitor ---
+# GUI app → Layer 3. The cask is marked auto_updates (Stats ships its own
+# updater), same situation as gcloud-cli above.
+# Preferences are declared as `defaults write` calls in
+# run_onchange_after_45-stats-defaults.sh.tmpl — NOT as a checked-in plist.
+cask "stats"
+
 # --- Fonts ---
 cask "font-jetbrains-mono-nerd-font"
 

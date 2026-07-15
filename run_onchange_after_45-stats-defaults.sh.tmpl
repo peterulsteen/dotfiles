@@ -1,0 +1,175 @@
+{{- if eq .chezmoi.os "darwin" -}}
+#!/usr/bin/env bash
+# Stats (eu.exelban.Stats) menu-bar monitor preferences.
+#
+# Stats keeps 100% of its config in ~/Library/Preferences/eu.exelban.Stats.plist,
+# a BINARY plist owned by cfprefsd. That file is deliberately NOT checked in:
+#   - binary => opaque `git diff`
+#   - cfprefsd caches prefs in memory and rewrites the file on its own schedule,
+#     so a plain `chezmoi apply` file-write gets clobbered on the next flush
+#   - ~1/3 of the keys are machine-specific (see "Deliberately NOT managed" below)
+# Instead we declare the portable subset here as `defaults write` calls.
+#
+# run_onchange (not run_once): editing this file re-applies it on next apply.
+#
+# Types matter: `defaults read` prints booleans as 1/0, so several keys that look
+# like ints are really Bools. Types below were taken from `plutil -convert xml1`,
+# not from `defaults read`. Writing an Int where Stats expects a Bool is silently
+# wrong. To re-derive after changing settings in the GUI:
+#   plutil -convert xml1 -o - ~/Library/Preferences/eu.exelban.Stats.plist
+#
+# Deliberately NOT managed (do not add these back):
+#   NSWindow Frame *, NSSplitView *, NSToolbar *  — window geometry; the settings
+#       window frame encodes a display resolution and would land off-screen on a
+#       Mac with a different monitor.
+#   fan_0_*, fan_1_*        — live fan RPM readings + hardware-indexed fan modes.
+#   sensor_TaLP, sensor_TaRF — raw 4-char SMC sensor IDs; Apple-Silicon specific.
+#   Disk_disk               — boot volume name; omitted so Stats auto-selects.
+#   remote_id               — per-device UUID. This repo is public.
+#   remote_tokens_migrated_to_keychain, runAtLoginInitialized, setupProcess
+#                           — first-run/migration state. Let Stats own these.
+#   support_ts, updater_check_ts, version — timestamps Stats rewrites constantly.
+#   SSD_network_chart_frame — vestigial key from the pre-rename Disk module.
+#   sensor_* that are `false` — those are already the default; only the enabled
+#       sensors are declared, which keeps this list stable across hardware.
+
+set -euo pipefail
+
+log() { printf '\033[1;34m[stats-defaults]\033[0m %s\n' "$*"; }
+
+domain="eu.exelban.Stats"
+
+# A running Stats holds its prefs in memory and writes them back on quit, which
+# would undo everything below. Quit first, restore afterwards only if it was up.
+stats_was_running=false
+if pgrep -qx Stats; then
+    stats_was_running=true
+    log "Quitting Stats so it doesn't write stale prefs back over ours..."
+    osascript -e 'quit app "Stats"' 2>/dev/null || true
+    # Give it a moment to flush and exit before we touch the domain.
+    for _ in $(seq 1 20); do
+        pgrep -qx Stats || break
+        sleep 0.25
+    done
+fi
+
+log "Writing Stats preferences..."
+
+# --- Global ---
+defaults write "$domain" LaunchAtLoginNext -bool true
+defaults write "$domain" temperature_units -string system
+
+# --- Which modules are enabled ---
+defaults write "$domain" CPU_state       -bool true
+defaults write "$domain" GPU_state       -bool true
+defaults write "$domain" RAM_state       -bool true
+defaults write "$domain" Disk_state      -bool true
+defaults write "$domain" Network_state   -bool true
+defaults write "$domain" Sensors_state   -bool true
+defaults write "$domain" Battery_state   -bool true
+defaults write "$domain" Bluetooth_state -bool false
+defaults write "$domain" Clock_state     -bool false
+defaults write "$domain" Clock_ntpSync   -bool false
+
+# --- CPU ---
+defaults write "$domain" CPU_widget                -string line_chart
+defaults write "$domain" CPU_line_chart_color      -string utilization
+defaults write "$domain" CPU_line_chart_box        -bool false
+defaults write "$domain" CPU_line_chart_frame      -bool false
+defaults write "$domain" CPU_line_chart_label      -bool false
+defaults write "$domain" CPU_line_chart_value      -bool false
+defaults write "$domain" CPU_line_chart_valueColor -bool true
+defaults write "$domain" CPU_lineChart_position    -int 0
+defaults write "$domain" CPU_mini_position         -int 1
+defaults write "$domain" CPU_label_position        -int 2
+defaults write "$domain" CPU_barChart_position     -int 3
+defaults write "$domain" CPU_pieChart_position     -int 4
+defaults write "$domain" CPU_tachometer_position   -int 5
+
+# --- GPU ---
+defaults write "$domain" GPU_widget                -string mini
+defaults write "$domain" GPU_bar_chart_color       -string system
+defaults write "$domain" GPU_line_chart_box        -bool false
+defaults write "$domain" GPU_line_chart_frame      -bool false
+defaults write "$domain" GPU_line_chart_valueColor -bool true
+defaults write "$domain" GPU_mini_position         -int 0
+defaults write "$domain" GPU_barChart_position     -int 1
+defaults write "$domain" GPU_lineChart_position    -int 2
+defaults write "$domain" GPU_label_position        -int 3
+defaults write "$domain" GPU_tachometer_position   -int 4
+
+# --- RAM ---
+defaults write "$domain" RAM_widget            -string mini
+defaults write "$domain" RAM_mini_color        -string pressure
+defaults write "$domain" RAM_combinedProcesses -bool false
+defaults write "$domain" RAM_oneView           -bool false
+defaults write "$domain" RAM_line_chart_box    -bool false
+defaults write "$domain" RAM_mini_position     -int 0
+defaults write "$domain" RAM_barChart_position -int 1
+defaults write "$domain" RAM_lineChart_position -int 2
+defaults write "$domain" RAM_label_position    -int 3
+defaults write "$domain" RAM_pieChart_position -int 4
+defaults write "$domain" RAM_memory_position   -int 5
+defaults write "$domain" RAM_tachometer_position -int 6
+defaults write "$domain" RAM_text_position     -int 7
+defaults write "$domain" RAM_state_position    -int 8
+
+# --- Disk ---
+# Disk_disk (volume name) intentionally omitted — Stats auto-selects the boot volume.
+defaults write "$domain" Disk_widget              -string network_chart
+defaults write "$domain" Disk_networkChart_position -int 0
+defaults write "$domain" Disk_barChart_position   -int 1
+defaults write "$domain" Disk_label_position      -int 2
+defaults write "$domain" Disk_mini_position       -int 3
+defaults write "$domain" Disk_pieChart_position   -int 4
+defaults write "$domain" Disk_memory_position     -int 5
+defaults write "$domain" Disk_speed_position      -int 6
+defaults write "$domain" Disk_text_position       -int 7
+
+# --- Network ---
+defaults write "$domain" Network_widget                -string network_chart
+defaults write "$domain" Network_networkChart_position -int 0
+defaults write "$domain" Network_speed_position        -int 1
+defaults write "$domain" Network_label_position        -int 2
+defaults write "$domain" Network_state_position        -int 3
+defaults write "$domain" Network_text_position         -int 4
+
+# --- Sensors ---
+defaults write "$domain" Sensors_widget                  -string sensors
+defaults write "$domain" Sensors_fanControl              -bool true
+defaults write "$domain" Sensors_fanValue                -string percentage
+defaults write "$domain" Sensors_hid                     -bool false
+defaults write "$domain" Sensors_oneView                 -bool true
+defaults write "$domain" Sensors_sensors_alignment       -string left
+defaults write "$domain" Sensors_sensors_mode            -string automatic
+defaults write "$domain" Sensors_sensors_monospacedFont  -bool false
+defaults write "$domain" Sensors_stack_position          -int 0
+defaults write "$domain" Sensors_barChart_position       -int 1
+defaults write "$domain" Sensors_mini_position           -int 2
+defaults write "$domain" Sensors_label_position          -int 3
+
+# Only the sensors that are switched ON. Everything unlisted defaults to off, so
+# this stays correct on hardware that exposes a different sensor set.
+defaults write "$domain" "sensor_Hottest CPU"               -bool true
+defaults write "$domain" "sensor_Total System Consumption"  -bool true
+
+# --- Battery ---
+defaults write "$domain" Battery_widget                 -string battery_details
+defaults write "$domain" Battery_battery_details_mode   -string timeAndPercentage
+defaults write "$domain" Battery_batteryDetails_position -int 0
+defaults write "$domain" Battery_battery_position       -int 1
+defaults write "$domain" Battery_label_position         -int 2
+defaults write "$domain" Battery_mini_position          -int 3
+defaults write "$domain" Battery_barChart_position      -int 4
+
+if [ "$stats_was_running" = true ]; then
+    log "Relaunching Stats..."
+    open -a Stats 2>/dev/null || log "WARNING: could not relaunch Stats; start it manually."
+elif [ -d /Applications/Stats.app ]; then
+    log "Stats is installed but wasn't running; prefs written, launch it when you like."
+else
+    log "Stats not installed yet; prefs staged for when the cask lands."
+fi
+
+log "Stats preferences applied."
+{{- end }}

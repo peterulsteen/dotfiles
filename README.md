@@ -37,7 +37,7 @@ This is the decision I keep coming back to. Every tool lives in **exactly one** 
 |---|---|---|---|
 | **1. Self-managing** | The tool's own installer / `<tool> self update` | `mise`, `uv`, `rustup`, `claude`, `codex` | Things that ship fast and update themselves well. I bootstrap them once and leave them alone. |
 | **2. mise** | `~/.config/mise/config.toml` | `node`, `go`, `terraform`, `opentofu`, `gh`, `lazygit`, `neovim`, `fzf`, `ripgrep`, `jq`, `fd`, `bat`, `eza`, `zoxide`, `atuin`, `starship`, `zellij`, `just`, `direnv`, `delta`, `gitleaks`, `stylua`, `selene`, `tree-sitter`, `shellcheck`, `actionlint`, `tealdeer` | Cross-platform single-binary tools and language runtimes. One declarative file, same on all four OSs. |
-| **3. Native pkg mgr** | `brew` / `apt` / `pacman` / `dnf` | `zsh` (login shell; built-in on macOS), `sheldon`, `ghostty`, `gnupg`, `podman`, `podman-compose`, fonts, `coreutils`, `gnu-getopt`, `awscli`, `google-cloud-cli`, `pass` | Things that need real OS integration: login shells, terminal emulators, system crypto, daemons, GUI apps, fonts. |
+| **3. Native pkg mgr** | `brew` / `apt` / `pacman` / `dnf` | `zsh` (login shell; built-in on macOS), `sheldon`, `ghostty`, `gnupg`, `podman`, `podman-compose`, fonts, `coreutils`, `gnu-getopt`, `awscli`, `google-cloud-cli`, `pass`, `stats` (macOS) | Things that need real OS integration: login shells, terminal emulators, system crypto, daemons, GUI apps, fonts. |
 
 My one hard rule: **a tool gets exactly one layer.** No `claude` in both `~/.local/bin` and a Brewfile, no `node` in both mise and brew, no `rust` in mise (rustup owns it). When two layers fight over the same tool, I get silent drift — so I don't let them.
 
@@ -63,6 +63,22 @@ My one hard rule: **a tool gets exactly one layer.** No `claude` in both `~/.loc
 ## Containers
 
 I run **podman** everywhere — `podman compose` for compose files. My shell aliases `docker` → `podman` so the muscle memory still works — but it's a *guarded* alias, skipped when a real `docker` binary is present (e.g. Dory on the work Mac), so it never shadows the real thing. On macOS the bootstrap does the one-time `podman machine init && podman machine start` for me.
+
+## Menu-bar monitoring (Stats, macOS)
+
+[Stats](https://github.com/exelban/stats) is the menu-bar system monitor. The app is a cask (Layer 3 — it's a GUI app), but its *config* needed a decision, because Stats keeps everything in `~/Library/Preferences/eu.exelban.Stats.plist` and that file resists being a dotfile in three ways:
+
+- It's a **binary plist** — checking it in gives you an opaque blob in every `git diff`.
+- **cfprefsd owns it, not the filesystem.** macOS caches preferences in memory and rewrites the file on its own schedule, so a plain `chezmoi apply` file-write gets clobbered on the next flush. A running Stats also writes its in-memory state back on quit.
+- **A quarter of the keys are machine-specific**, and syncing them across two Macs is actively harmful: `NSWindow Frame …` encodes a display resolution (settings window lands off-screen on the other machine), `fan_0_speed` is a live RPM reading, `sensor_TaLP`/`sensor_TaRF` are raw Apple-Silicon SMC sensor IDs, and `remote_id` is a per-device UUID — which this public repo doesn't want.
+
+So the plist is **not** checked in. Instead `run_onchange_after_45-stats-defaults.sh.tmpl` declares the portable 85-key subset as `defaults write` calls: which modules are on, each module's widget and colors, sensor selection, `temperature_units`, launch-at-login. It quits Stats, writes, and relaunches. The 26 machine-specific keys are left for Stats to own, and the script documents why each one is excluded so the list doesn't quietly grow back.
+
+One trap worth writing down: `defaults read` prints booleans as `1`/`0`, so keys like `LaunchAtLoginNext` *look* like ints and aren't. The types in the script came from `plutil -convert xml1`, not `defaults read`. To re-derive the subset after changing settings in the GUI:
+
+```sh
+plutil -convert xml1 -o - ~/Library/Preferences/eu.exelban.Stats.plist
+```
 
 ## Terminal sessions (Zellij)
 
@@ -114,7 +130,8 @@ I moved to [Zellij](https://zellij.dev) (Layer 2 / mise) after one too many rebo
 ├── run_once_before_10-install-package-managers.sh.tmpl
 ├── run_once_before_20-install-self-managers.sh.tmpl
 ├── run_onchange_30-mise-install.sh.tmpl
-└── run_once_after_40-macos-defaults.sh.tmpl   (mac-only)
+├── run_once_after_40-macos-defaults.sh.tmpl   (mac-only)
+└── run_onchange_after_45-stats-defaults.sh.tmpl   Stats menu-bar prefs (mac-only)
 ```
 
 ## Which machines this runs on
