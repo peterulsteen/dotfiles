@@ -8,7 +8,7 @@
 
 {{- $name        := promptStringOnce . "name"        "Full name for git commits" -}}
 {{- $email       := promptStringOnce . "email"       "Email for git commits" -}}
-{{- $signingkey  := promptStringOnce . "signingkey"  "Absolute path to SSH signing pubkey (e.g. ~/.ssh/id_ed25519.pub)" -}}
+{{- $signingkey  := promptStringOnce . "signingkey"  "SSH signing public key, literal content (e.g. 'ssh-ed25519 AAAA...') -- 1Password's git-signing integration writes this inline and fights a path reference, so match its format" -}}
 {{- $isPersonal  := promptBoolOnce   . "isPersonal"  "Is this a personal (non-work-managed) machine?" -}}
 {{- $isWorkstation := promptBoolOnce . "isWorkstation" "Is this a workstation (full zsh + sheldon plugins)? No = lean server/VM" true -}}
 {{- $workEmail   := promptStringOnce . "workEmail"   "Work email for work-directory repos (blank if none)" "" -}}

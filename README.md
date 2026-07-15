@@ -27,7 +27,7 @@ On first run chezmoi prompts me for a few per-machine values — name, email, si
 
 From there chezmoi runs my bootstrap scripts on its own: it installs the OS-native package manager (or just its packages on Linux), then the self-managing tools (`mise`, `uv`, `rustup`, `claude`), then `mise install` to materialize every CLI and language runtime. `codex` comes in last via `npm install -g`, once mise has provided Node.
 
-> One gotcha I hit: a fresh `mise install` pulls ~25 tools from GitHub releases and will blow through the unauthenticated API rate limit. Before bootstrapping a new machine, `export GITHUB_TOKEN=$(gh auth token)` (or any no-scope PAT). If a tool ever resolves to a bogus `vlatest` tag, that's the poisoned-cache symptom — `mise cache clear` and retry.
+> One gotcha I hit: a fresh `mise install` pulls ~30 tools from GitHub releases and will blow through the unauthenticated API rate limit. The bootstrap now checks for this itself — if `gh` is authenticated it exports `GITHUB_TOKEN` from `gh auth token` automatically, otherwise it warns you to set one by hand. If a tool ever resolves to a bogus `vlatest` tag, that's the poisoned-cache symptom — `mise cache clear` and retry.
 
 ## How I organize tools: the three-layer model
 
@@ -36,8 +36,8 @@ This is the decision I keep coming back to. Every tool lives in **exactly one** 
 | Layer | Who owns upgrades | What lives here | Why |
 |---|---|---|---|
 | **1. Self-managing** | The tool's own installer / `<tool> self update` | `mise`, `uv`, `rustup`, `claude`, `codex` | Things that ship fast and update themselves well. I bootstrap them once and leave them alone. |
-| **2. mise** | `~/.config/mise/config.toml` | `node`, `go`, `terraform`, `opentofu`, `gh`, `lazygit`, `neovim`, `fzf`, `ripgrep`, `jq`, `fd`, `bat`, `eza`, `zoxide`, `atuin`, `starship`, `zellij`, `just`, `direnv`, `delta`, `gitleaks`, `stylua`, `selene`, `tree-sitter`, `shellcheck`, `actionlint`, `tealdeer` | Cross-platform single-binary tools and language runtimes. One declarative file, same on all four OSs. |
-| **3. Native pkg mgr** | `brew` / `apt` / `pacman` / `dnf` | `zsh` (login shell; built-in on macOS), `sheldon`, `ghostty`, `gnupg`, `podman`, `podman-compose`, fonts, `coreutils`, `gnu-getopt`, `awscli`, `google-cloud-cli`, `pass`, `stats` (macOS) | Things that need real OS integration: login shells, terminal emulators, system crypto, daemons, GUI apps, fonts. |
+| **2. mise** | `~/.config/mise/config.toml` | `node`, `go`, `terraform`, `opentofu`, `terragrunt`, `helm`, `k9s`, `postgres`, `gh`, `lazygit`, `neovim`, `fzf`, `ripgrep`, `jq`, `fd`, `bat`, `eza`, `zoxide`, `atuin`, `starship`, `zellij`, `just`, `direnv`, `delta`, `carapace`, `gitleaks`, `stylua`, `selene`, `tree-sitter`, `shellcheck`, `actionlint`, `tealdeer`, `lua-language-server` | Cross-platform single-binary tools and language runtimes. One declarative file, same on all four OSs. |
+| **3. Native pkg mgr** | `brew` / `apt` / `pacman` / `dnf` | `zsh` (login shell; built-in on macOS), `sheldon`, `ghostty`, `gnupg`, `dory` (macOS), `podman`, `podman-compose`, `stats` (macOS), fonts, `coreutils`, `gnu-getopt`, `awscli`, `google-cloud-cli`, `pass`, `1password-cli` (personal machines only) | Things that need real OS integration: login shells, terminal emulators, system crypto, daemons, GUI apps, fonts. |
 
 My one hard rule: **a tool gets exactly one layer.** No `claude` in both `~/.local/bin` and a Brewfile, no `node` in both mise and brew, no `rust` in mise (rustup owns it). When two layers fight over the same tool, I get silent drift — so I don't let them.
 
@@ -62,7 +62,9 @@ My one hard rule: **a tool gets exactly one layer.** No `claude` in both `~/.loc
 
 ## Containers
 
-I run **podman** everywhere — `podman compose` for compose files. My shell aliases `docker` → `podman` so the muscle memory still works — but it's a *guarded* alias, skipped when a real `docker` binary is present (e.g. Dory on the work Mac), so it never shadows the real thing. On macOS the bootstrap does the one-time `podman machine init && podman machine start` for me.
+On Linux I run **podman** — `podman compose` for compose files. My shell aliases `docker` → `podman` so the muscle memory still works, but it's a *guarded* alias, skipped when a real `docker` binary is present, so it never shadows the real thing.
+
+On macOS I use [**Dory**](https://github.com/Augani/dory) (`augani/dory` tap) instead — a lighter-weight Docker-compatible runtime than running a full podman machine VM. `podman`/`podman-compose`/`podman-desktop` still install via the Brewfile for parity with the Linux machines, but the bootstrap does **not** auto-run `podman machine init`/`start` — if you want podman instead of Dory on a Mac, that's a manual step.
 
 ## Menu-bar monitoring (Stats, macOS)
 
@@ -127,9 +129,10 @@ I moved to [Zellij](https://zellij.dev) (Layer 2 / mise) after one too many rebo
 │   ├── nvim/                                  Neovim (LazyVim)
 │   ├── starship/starship.toml                 prompt config
 │   └── zellij/                                multiplexer (config.kdl + layouts/)
-├── run_once_before_10-install-package-managers.sh.tmpl
+├── run_onchange_before_10-install-package-managers.sh.tmpl   (re-runs when Brewfile/packages/*.txt change)
 ├── run_once_before_20-install-self-managers.sh.tmpl
 ├── run_onchange_30-mise-install.sh.tmpl
+├── run_onchange_after_35-sheldon-plugins.sh.tmpl             (workstations only)
 ├── run_once_after_40-macos-defaults.sh.tmpl   (mac-only)
 └── run_onchange_after_45-stats-defaults.sh.tmpl   Stats menu-bar prefs (mac-only)
 ```

@@ -1,6 +1,19 @@
 #!/usr/bin/env bash
 # Bootstrap step 1: install OS-native package manager (if needed) and Layer 3 packages.
-# Runs once on first `chezmoi apply`. Idempotent — safe to re-run.
+#
+# This is `run_onchange_*` (not `run_once_*`) -- chezmoi re-runs it whenever the
+# rendered script content changes, so editing the Brewfile or a packages/*.txt
+# list actually takes effect on the next `chezmoi apply` instead of silently
+# doing nothing until someone remembers to run `brew bundle` by hand. Idempotent
+# -- safe to re-run (brew bundle / apt-get / pacman / dnf install are all
+# no-ops for already-installed packages).
+#
+# Content hashes below force a re-render (and re-run) whenever a package list
+# changes:
+# Brewfile hash: {{ include "Brewfile.darwin.tmpl" | sha256sum }}
+# debian.txt hash: {{ include "packages/debian.txt" | sha256sum }}
+# arch.txt hash: {{ include "packages/arch.txt" | sha256sum }}
+# fedora.txt hash: {{ include "packages/fedora.txt" | sha256sum }}
 #
 # Layer 1 self-managers (mise, uv, rustup, claude, codex) are installed in step 20.
 # Layer 2 mise-managed tools are installed in step 30.
@@ -30,7 +43,14 @@ DISTRO_ID=""
 DISTRO_LIKE=""
 {{- end }}
 
-log "OS=${OS} DISTRO_ID=${DISTRO_ID} DISTRO_LIKE=${DISTRO_LIKE}"
+# Personal vs. work-managed machine (from the `chezmoi init` prompt). Drives
+# whether 1password-cli gets installed -- see README's Secrets section.
+# Defensive default = false (skip), so a machine that hasn't re-run
+# `chezmoi init` for this prompt doesn't unexpectedly gain a new package.
+{{- $isPersonal := false }}{{ if hasKey . "isPersonal" }}{{ $isPersonal = .isPersonal }}{{ end }}
+IS_PERSONAL={{ $isPersonal }}
+
+log "OS=${OS} DISTRO_ID=${DISTRO_ID} DISTRO_LIKE=${DISTRO_LIKE} IS_PERSONAL=${IS_PERSONAL}"
 
 # Path to this repo's package lists, available at apply time:
 PKG_DIR="{{ .chezmoi.sourceDir }}/packages"
@@ -63,10 +83,17 @@ then re-run \`chezmoi apply\`."
 # --- Helper: install brew packages from Brewfile ---
 install_brew_packages() {
     log "Installing macOS Homebrew packages from Brewfile..."
+    # BREWFILE points at the raw .tmpl source, not the rendered ~/Brewfile.darwin
+    # target -- deliberately: this script is `_before_`, so it runs before
+    # chezmoi has written any regular files to disk, and ~/Brewfile.darwin
+    # wouldn't exist yet on a truly fresh machine's first apply. That means we
+    # MUST render it ourselves here rather than handing brew the raw template
+    # text (which contains unrendered chezmoi template syntax that brew can't
+    # parse as Ruby).
     # NB: `--no-lock` was removed from `brew bundle` (Brewfile.lock.json is no
     # longer generated), so passing it now errors. Modern brew bundle is
     # lockfile-free by default.
-    brew bundle --file="${BREWFILE}"
+    brew bundle --file=<(chezmoi execute-template < "${BREWFILE}")
 }
 
 # --- Helper: install packages from a newline-separated list, ignoring blank/comment lines ---
@@ -114,6 +141,62 @@ gpgkey=https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
 EOF
 }
 
+# --- Helper: install 1password-cli on personal Debian/Ubuntu machines, via
+# 1Password's own apt repo (not in default repos). Idempotent. ---
+install_1password_cli_debian() {
+    if have op; then
+        log "1Password CLI already installed: $(op --version)"
+        return
+    fi
+    log "Installing 1Password CLI (personal machine)..."
+    local arch keyring=/usr/share/keyrings/1password-archive-keyring.gpg
+    arch="$(dpkg --print-architecture)"
+    curl -sS https://downloads.1password.com/linux/keys/1password.asc \
+        | sudo gpg --dearmor --output "$keyring"
+    echo "deb [arch=${arch} signed-by=${keyring}] https://downloads.1password.com/linux/debian/${arch} stable main" \
+        | sudo tee /etc/apt/sources.list.d/1password.list >/dev/null
+    sudo apt-get update
+    sudo apt-get install -y 1password-cli
+}
+
+# --- Helper: install 1password-cli on personal Fedora machines, via
+# 1Password's own dnf repo. Idempotent. ---
+install_1password_cli_fedora() {
+    if have op; then
+        log "1Password CLI already installed: $(op --version)"
+        return
+    fi
+    log "Installing 1Password CLI (personal machine)..."
+    sudo rpm --import https://downloads.1password.com/linux/keys/1password.asc
+    sudo tee /etc/yum.repos.d/1password.repo >/dev/null <<'EOF'
+[1password]
+name=1Password Stable Channel
+baseurl=https://downloads.1password.com/linux/rpm/stable/$basearch
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey="https://downloads.1password.com/linux/keys/1password.asc"
+EOF
+    sudo dnf install -y 1password-cli
+}
+
+# --- Helper: install 1password-cli on personal Arch machines, from the AUR.
+# No AUR helper (yay/paru) is installed anywhere else in this repo, so build it
+# directly with makepkg rather than adding a new Layer-3 dependency just for
+# this one package. Idempotent. ---
+install_1password_cli_arch() {
+    if have op; then
+        log "1Password CLI already installed: $(op --version)"
+        return
+    fi
+    log "Installing 1Password CLI from AUR (personal machine)..."
+    local build_dir
+    build_dir="$(mktemp -d)"
+    git clone --depth=1 https://aur.archlinux.org/1password-cli.git "$build_dir"
+    (cd "$build_dir" && makepkg -si --noconfirm)
+    rm -rf "$build_dir"
+}
+
 # --- OS dispatch ---
 # Match on $DISTRO_ID first (most specific). Fall back to $DISTRO_LIKE for
 # derivatives we haven't named explicitly. Keep it as a flat routing table.
@@ -129,15 +212,18 @@ case "$OS" in
                 setup_gcloud_apt_repo
                 sudo apt-get update
                 sudo apt-get install -y $(read_pkg_list "${PKG_DIR}/debian.txt")
+                [ "$IS_PERSONAL" = true ] && install_1password_cli_debian
                 ;;
             arch)
                 log "Installing pacman packages..."
                 sudo pacman -Syu --noconfirm --needed $(read_pkg_list "${PKG_DIR}/arch.txt")
+                [ "$IS_PERSONAL" = true ] && install_1password_cli_arch
                 ;;
             fedora)
                 log "Installing dnf packages..."
                 setup_gcloud_dnf_repo
                 sudo dnf install -y $(read_pkg_list "${PKG_DIR}/fedora.txt")
+                [ "$IS_PERSONAL" = true ] && install_1password_cli_fedora
                 ;;
             *)
                 case "$DISTRO_LIKE" in
@@ -146,15 +232,18 @@ case "$OS" in
                         setup_gcloud_apt_repo
                         sudo apt-get update
                         sudo apt-get install -y $(read_pkg_list "${PKG_DIR}/debian.txt")
+                        [ "$IS_PERSONAL" = true ] && install_1password_cli_debian
                         ;;
                     *arch*)
                         log "Falling back to arch via idLike (${DISTRO_LIKE})..."
                         sudo pacman -Syu --noconfirm --needed $(read_pkg_list "${PKG_DIR}/arch.txt")
+                        [ "$IS_PERSONAL" = true ] && install_1password_cli_arch
                         ;;
                     *fedora*|*rhel*)
                         log "Falling back to fedora via idLike (${DISTRO_LIKE})..."
                         setup_gcloud_dnf_repo
                         sudo dnf install -y $(read_pkg_list "${PKG_DIR}/fedora.txt")
+                        [ "$IS_PERSONAL" = true ] && install_1password_cli_fedora
                         ;;
                     *)
                         die "Unsupported Linux distro: id=${DISTRO_ID} idLike=${DISTRO_LIKE}"

@@ -1,7 +1,7 @@
 # Brewfile — macOS only (Layer 3: tools that need OS integration)
 #
 # Run with: brew bundle --file=Brewfile.darwin.tmpl
-# This file is auto-applied by run_once_before_10-install-package-managers.sh.tmpl on macOS.
+# This file is auto-applied by run_onchange_before_10-install-package-managers.sh.tmpl on macOS.
 #
 # DO NOT add tools here that belong in mise (Layer 2) or are self-managing (Layer 1).
 # See CLAUDE.md for the layer decision tree.
@@ -11,7 +11,14 @@
 # the plugin manager is installed here.
 brew "sheldon"    # zsh plugin manager (workstation interactive stack)
 
-# --- Container engine (Podman everywhere; no Docker) ---
+# --- Container engine ---
+# Dory (github.com/Augani/dory) is a lightweight Docker-compatible runtime,
+# lower resource overhead than a full podman machine VM. Requires macOS >= 15.
+tap "augani/dory"
+cask "dory"
+# Podman stays installed as a fallback/for parity with the Linux machines, but
+# its VM is NOT auto-initialized here (see README) -- `podman machine init &&
+# podman machine start` if you actually want to use it instead of Dory.
 brew "podman"
 brew "podman-compose"
 cask "podman-desktop"   # GUI; Podman replacement for Docker Desktop
@@ -51,6 +58,13 @@ cask "stats"
 # --- Fonts ---
 cask "font-jetbrains-mono-nerd-font"
 
+{{- $isPersonal := false }}{{ if hasKey . "isPersonal" }}{{ $isPersonal = .isPersonal }}{{ end }}
+{{- if $isPersonal }}
+
 # --- Personal-only: 1Password CLI ---
-# Uncomment on personal macOS machines. Leave commented on the work laptop.
-# cask "1password-cli"
+# Gated on the isPersonal prompt from `chezmoi init` -- never installed on the
+# work-issued mac, where secrets are managed by hand (see README's Secrets
+# section). Linux personal machines get the equivalent via their native repo;
+# see run_onchange_before_10-install-package-managers.sh.tmpl.
+cask "1password-cli"
+{{- end }}

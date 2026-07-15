@@ -49,6 +49,18 @@
     # unaffected. See dot_config/git/hooks/executable_pre-commit.
     hooksPath = ~/.config/git/hooks
 
+# gh is a Layer 2 (mise) tool on every OS, so the shim path is the same
+# everywhere -- no per-OS branch needed (same reasoning as the Ghostty zellij
+# command). MUST be the shims path, not a resolved installs/<version>/... path:
+# the latter breaks silently on the next `gh` upgrade since that directory is
+# removed when mise installs the new version.
+[credential "https://github.com"]
+    helper =
+    helper = !{{ .chezmoi.homeDir }}/.local/share/mise/shims/gh auth git-credential
+[credential "https://gist.github.com"]
+    helper =
+    helper = !{{ .chezmoi.homeDir }}/.local/share/mise/shims/gh auth git-credential
+
 [interactive]
     diffFilter = delta --color-only
 

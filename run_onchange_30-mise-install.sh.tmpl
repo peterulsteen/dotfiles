@@ -21,6 +21,24 @@ if ! command -v mise >/dev/null 2>&1; then
     exit 1
 fi
 
+# This installs ~30 tools from GitHub releases in one shot, which can blow
+# through the unauthenticated API rate limit on a fresh machine (see README).
+# Soft warning, not a hard fail -- `mise install` may still succeed if the
+# limit isn't hit, and this only checks the env var, not whether a token is
+# already cached some other way.
+if [ -z "${GITHUB_TOKEN:-}" ] && [ -z "${MISE_GITHUB_TOKEN:-}" ]; then
+    if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+        GITHUB_TOKEN="$(gh auth token)"
+        export GITHUB_TOKEN
+        log "No GITHUB_TOKEN set; using 'gh auth token' to avoid GitHub API rate limits."
+    else
+        echo "[bootstrap] WARN: no GITHUB_TOKEN/MISE_GITHUB_TOKEN set and 'gh' isn't authenticated." >&2
+        echo "[bootstrap] WARN: mise install pulls ~30 tools from GitHub releases and may hit the" >&2
+        echo "[bootstrap] WARN: unauthenticated rate limit. export GITHUB_TOKEN=<a PAT> and re-run" >&2
+        echo "[bootstrap] WARN: if this fails, or 'mise cache clear' if a tool resolves to 'vlatest'." >&2
+    fi
+fi
+
 log "Running mise install (Layer 2 tools)..."
 mise install
 mise reshim 2>/dev/null || true
