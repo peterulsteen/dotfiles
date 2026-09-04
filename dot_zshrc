@@ -53,3 +53,10 @@ command -v mise     >/dev/null 2>&1 && eval "$(mise activate zsh)"
 command -v carapace >/dev/null 2>&1 && eval "$(carapace _carapace zsh)"
 # atuin owns Ctrl-R + up-arrow history; load last so it wins the keybindings.
 command -v atuin    >/dev/null 2>&1 && eval "$(atuin init zsh)"
+
+# clbudget (closedloop-ai/scratch peteru/clbudget): keep the pnpm build/test-budget shim first in PATH. Must stay
+# after mise activate and at the tail of this file; install.sh rewrites exactly this marked block, so keep it byte-identical.
+# >>> clbudget >>>
+_clbudget_path() { [[ -d $HOME/.config/clbudget/bin ]] && path=($HOME/.config/clbudget/bin ${path:#$HOME/.config/clbudget/bin}) }   # clbudget pnpm shim first; re-applied after mise/nvm/brew at every prompt; no-op where not installed
+_clbudget_path; autoload -Uz add-zsh-hook; add-zsh-hook precmd _clbudget_path
+# <<< clbudget <<<
