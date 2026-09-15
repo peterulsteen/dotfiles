@@ -1,11 +1,20 @@
 [user]
     name = {{ .name | quote }}
     email = {{ .email | quote }}
+{{- if .signingkey }}
+    # Literal key content: 1Password's git-signing integration writes it inline
+    # and fights a path reference.
     signingkey = {{ .signingkey | quote }}
+{{- else }}
+    # Blank signingkey at `chezmoi init`: a local key, generated and uploaded to
+    # GitHub by run_once_after_60-ssh-signing-key.sh.tmpl. Pointing at the .pub
+    # lets ssh-keygen use the agent if the key is loaded, else the private file.
+    signingkey = {{ joinPath .chezmoi.homeDir ".ssh/id_ed25519_signing.pub" | quote }}
+{{- end }}
 
 [gpg]
     format = ssh
-{{- if eq .chezmoi.os "darwin" }}
+{{- if and .signingkey (eq .chezmoi.os "darwin") }}
 {{-   $opSign := "/Applications/1Password.app/Contents/MacOS/op-ssh-sign" }}
 {{-   if stat $opSign }}
 # macOS: op-ssh-sign connects directly to the 1Password app IPC (already unlocked
@@ -17,17 +26,18 @@
 [commit]
     gpgsign = true
 {{-   else }}
-# macOS without 1Password (e.g. the work laptop, where 1Password is intentionally
-# not installed): no SSH signing helper exists and the key's private half lives in
-# 1Password, so signing is impossible here. Commit unsigned rather than break every
-# commit. Install 1Password and re-run `chezmoi apply` to restore signed commits.
+# macOS with a 1Password key but no 1Password app: no SSH signing helper exists
+# and the key's private half lives in 1Password, so signing is impossible here.
+# Commit unsigned rather than break every commit. Install 1Password and re-run
+# `chezmoi apply`, or blank signingkey in ~/.config/chezmoi/chezmoi.toml to use a
+# generated local key instead.
 [commit]
     gpgsign = false
 {{-   end }}
 {{- else }}
-# Linux: op-ssh-sign cannot trigger a polkit unlock dialog when 1Password is locked.
-# ssh-keygen routes through SSH_AUTH_SOCK (the 1Password agent), which CAN pop up
-# a system-auth dialog on demand.
+# Linux, or a local key on any OS. Linux: op-ssh-sign cannot trigger a polkit
+# unlock dialog when 1Password is locked; ssh-keygen routes through SSH_AUTH_SOCK
+# (the 1Password agent), which CAN pop up a system-auth dialog on demand.
 [gpg "ssh"]
     program = /usr/bin/ssh-keygen
 

@@ -1,0 +1,44 @@
+{{- if not .signingkey -}}
+#!/usr/bin/env bash
+# Bootstrap: generate a local SSH commit-signing key and upload it to GitHub.
+#
+# Renders only when `signingkey` was left blank at `chezmoi init` (machines
+# without 1Password, e.g. the work mac); with a 1Password key it renders empty
+# and chezmoi skips it. Runs after step 30, so mise has already installed gh.
+# `run_once_` only records success, so an aborted login or failed upload retries
+# on the next `chezmoi apply`. dot_config/git/config.tmpl points at this key.
+
+set -euo pipefail
+
+log() { printf '\033[1;34m[bootstrap]\033[0m %s\n' "$*"; }
+
+export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
+# A PAT exported to get past mise's rate limit (see README) would shadow gh's
+# stored login, likely lacks the signing-key scope, and makes `gh auth refresh`
+# refuse to run.
+unset GITHUB_TOKEN GH_TOKEN
+
+key="$HOME/.ssh/id_ed25519_signing"
+if [ ! -f "$key" ]; then
+    log "Generating SSH signing key at ${key}..."
+    mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
+    # No passphrase: GUI git clients and coding agents sign without a TTY to
+    # prompt on. Add one later with `ssh-keygen -p -f ~/.ssh/id_ed25519_signing`.
+    ssh-keygen -q -t ed25519 -N "" -C "git-signing@{{ .chezmoi.hostname }}" -f "$key"
+fi
+
+# Uploading signing keys needs the admin:ssh_signing_key scope, which gh's
+# default login doesn't request.
+scopes="$(gh auth status -h github.com --json hosts \
+    --jq '.hosts["github.com"][]? | select(.active and .state == "success") | .scopes' 2>/dev/null)"
+if [ -z "$scopes" ]; then
+    log "Logging gh in to GitHub (with the signing-key scope)..."
+    gh auth login -h github.com -s admin:ssh_signing_key
+elif [[ "$scopes" != *admin:ssh_signing_key* ]]; then
+    log "Adding the admin:ssh_signing_key scope to gh's login..."
+    gh auth refresh -h github.com -s admin:ssh_signing_key
+fi
+
+# No-op ("already exists") if this key is already on the account.
+gh ssh-key add "${key}.pub" --type signing --title "{{ .chezmoi.hostname }} (git signing)"
+{{ end -}}

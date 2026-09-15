@@ -23,10 +23,23 @@ fi
 
 # This installs ~30 tools from GitHub releases in one shot, which can blow
 # through the unauthenticated API rate limit on a fresh machine (see README).
-# Soft warning, not a hard fail -- `mise install` may still succeed if the
-# limit isn't hit, and this only checks the env var, not whether a token is
-# already cached some other way.
+# So bootstrap `gh` itself FIRST -- one tool, a handful of API calls -- and log
+# it in, then spend its token on the big install. The login also asks for
+# admin:ssh_signing_key up front, the scope step 60 needs to upload a signing
+# key, so that step doesn't have to send you through a second browser flow.
+#
+# Every part of this is best-effort: a missing/skipped login degrades to the
+# same soft warning as before (`mise install` may well succeed anyway), never a
+# hard fail. Interactive login only with a TTY, so headless applies don't hang.
 if [ -z "${GITHUB_TOKEN:-}" ] && [ -z "${MISE_GITHUB_TOKEN:-}" ]; then
+    if ! command -v gh >/dev/null 2>&1; then
+        log "Installing gh ahead of the rest, to authenticate this install..."
+        mise install aqua:cli/cli && mise reshim 2>/dev/null || true
+    fi
+    if command -v gh >/dev/null 2>&1 && ! gh auth status >/dev/null 2>&1 && [ -t 0 ]; then
+        log "Logging gh in to GitHub (Ctrl-C to skip -- the install may then hit the rate limit)..."
+        gh auth login -h github.com -s admin:ssh_signing_key || true
+    fi
     if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
         GITHUB_TOKEN="$(gh auth token)"
         export GITHUB_TOKEN

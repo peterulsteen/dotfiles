@@ -21,13 +21,13 @@ grep -qxF "$(command -v zsh)" /etc/shells || command -v zsh | sudo tee -a /etc/s
 chsh -s "$(command -v zsh)"
 ```
 
-On first run chezmoi prompts me for a few per-machine values — name, email, signing-key path, whether the machine is personal, and where my work repos live. They get written to `~/.config/chezmoi/chezmoi.toml` and never touch this repo.
+On first run chezmoi prompts me for a few per-machine values — name, email, SSH signing key (the 1Password public key, or blank to generate one), whether the machine is personal, and where my work repos live. They get written to `~/.config/chezmoi/chezmoi.toml` and never touch this repo.
 
 > **Fresh macOS, first run:** the bootstrap installs Homebrew, which needs sudo to create `/opt/homebrew`, so it prompts for my password once — the script primes `sudo` before the (otherwise non-interactive) install to make that a clean prompt rather than a `Need sudo access on macOS` abort. Run `chezmoi init --apply` from a real terminal so it can ask. If you're somewhere it can't prompt (no TTY), run `sudo -v` first, or pre-install Homebrew (`/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`) and then `chezmoi apply`.
 
-From there chezmoi runs my bootstrap scripts on its own: it installs the OS-native package manager (or just its packages on Linux), then the self-managing tools (`mise`, `uv`, `rustup`, `claude`), then `mise install` to materialize every CLI and language runtime. `codex` comes in last via `npm install -g`, once mise has provided Node.
+From there chezmoi runs my bootstrap scripts on its own: it installs the OS-native package manager (or just its packages on Linux), then the self-managing tools (`mise`, `uv`, `rustup`, `claude`), then `mise install` to materialize every CLI and language runtime. `codex` comes in last via `npm install -g`, once mise has provided Node. If I left the signing key blank, a final step generates `~/.ssh/id_ed25519_signing` and uploads it to GitHub as a signing key with `gh ssh-key add`. That step also runs `gh auth login`, or adds the `admin:ssh_signing_key` scope to an existing login, when needed.
 
-> One gotcha I hit: a fresh `mise install` pulls ~30 tools from GitHub releases and will blow through the unauthenticated API rate limit. The bootstrap now checks for this itself — if `gh` is authenticated it exports `GITHUB_TOKEN` from `gh auth token` automatically, otherwise it warns you to set one by hand. If a tool ever resolves to a bogus `vlatest` tag, that's the poisoned-cache symptom — `mise cache clear` and retry.
+> One gotcha I hit: a fresh `mise install` pulls ~30 tools from GitHub releases and will blow through the unauthenticated API rate limit. The bootstrap now gets ahead of it: it installs `gh` first (one tool, a handful of API calls), logs in if it isn't already — asking for the `admin:ssh_signing_key` scope while it's there, so the signing-key step below needs no second browser trip — and exports `GITHUB_TOKEN` from `gh auth token` before the big install. If it can't (no TTY, or I skip the login) it falls back to warning me to set a token by hand. If a tool ever resolves to a bogus `vlatest` tag, that's the poisoned-cache symptom — `mise cache clear` and retry.
 
 ## How I organize tools: the three-layer model
 
@@ -134,7 +134,8 @@ I moved to [Zellij](https://zellij.dev) (Layer 2 / mise) after one too many rebo
 ├── run_onchange_30-mise-install.sh.tmpl
 ├── run_onchange_after_35-sheldon-plugins.sh.tmpl             (workstations only)
 ├── run_once_after_40-macos-defaults.sh.tmpl   (mac-only)
-└── run_onchange_after_45-stats-defaults.sh.tmpl   Stats menu-bar prefs (mac-only)
+├── run_onchange_after_45-stats-defaults.sh.tmpl   Stats menu-bar prefs (mac-only)
+└── run_once_after_60-ssh-signing-key.sh.tmpl      generate + upload a local signing key (blank signingkey only)
 ```
 
 ## Which machines this runs on
@@ -150,7 +151,7 @@ I keep per-OS divergence small on purpose. The few differences are handled with 
 
 ## Secrets
 
-This repo is **public**, so nothing secret lives in it — no keys, tokens, or credentials. SSH keys, AWS configs, GnuPG keyrings, and 1Password vaults all live out-of-band. The per-machine bits that vary (signing-key path, personal vs. work email) come from values I'm prompted for at `chezmoi init`, stored in `~/.config/chezmoi/chezmoi.toml`, which is never committed.
+This repo is **public**, so nothing secret lives in it — no keys, tokens, or credentials. SSH keys, AWS configs, GnuPG keyrings, and 1Password vaults all live out-of-band. The per-machine bits that vary (signing key, personal vs. work email) come from values I'm prompted for at `chezmoi init`, stored in `~/.config/chezmoi/chezmoi.toml`, which is never committed.
 
 My git identity is split by directory: commits default to my personal email, and an `includeIf "gitdir:…"` switches to my work email for repos under my work directory. One SSH signing key covers both, since GitHub verifies the signature against my account, not the commit email.
 
