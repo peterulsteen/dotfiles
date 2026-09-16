@@ -29,6 +29,8 @@ From there chezmoi runs my bootstrap scripts on its own: it installs the OS-nati
 
 > One gotcha I hit: a fresh `mise install` pulls ~30 tools from GitHub releases and will blow through the unauthenticated API rate limit. The bootstrap now gets ahead of it: it installs `gh` first (one tool, a handful of API calls), logs in if it isn't already — asking for the `admin:ssh_signing_key` scope while it's there, so the signing-key step below needs no second browser trip — and exports `GITHUB_TOKEN` from `gh auth token` before the big install. If it can't (no TTY, or I skip the login) it falls back to warning me to set a token by hand. If a tool ever resolves to a bogus `vlatest` tag, that's the poisoned-cache symptom — `mise cache clear` and retry.
 
+> A second one, macOS only: `eza` has no published macOS binaries, so mise builds it with `cargo`, which needs a *coherent* C toolchain. A company Mac handed to me had Command Line Tools 26.6 sitting next to the macOS 27.0 SDK, and the older `ld` couldn't parse the newer SDK's stub libraries — `error: unknown architecture arm64e.x1-macos` and `tapi error: malformed file`, on every C link, not just eza's. `softwareupdate --list` showed the matching CLT update; installing just that one (`sudo softwareupdate -i "Command Line Tools for Xcode 27.0-27.0"`, *not* the macOS upgrade also listed) fixed it. `ld -v` prints the linker version to compare against the newest SDK in `/Library/Developer/CommandLineTools/SDKs`.
+
 ## How I organize tools: the three-layer model
 
 This is the decision I keep coming back to. Every tool lives in **exactly one** layer, chosen by who owns its *upgrades*:
