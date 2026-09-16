@@ -22,8 +22,16 @@ exit 0
 {{- end }}
 
 if ! have sheldon; then
-    log "sheldon not installed; skipping (workstation install lives in step 10/20)."
-    exit 0
+    # Only workstations reach here (the server profile exited above), and a
+    # workstation without sheldon means step 10/20 didn't install it. Fail rather
+    # than skip: exiting 0 records success for this run_onchange hash, so the
+    # plugins would stay unprovisioned even once sheldon appears -- which is how a
+    # silently empty `brew bundle` cost an afternoon (no plugins, no `ll`).
+    printf '\033[1;31m[sheldon]\033[0m %s\n' \
+        "sheldon is missing on a workstation — step 10/20 (Layer 3 packages) did not install it." \
+        "macOS: check the 'brew bundle' output in step 10. Linux: see packages/ and step 20's cargo build." \
+        "Fix that, then re-run \`chezmoi apply\`." >&2
+    exit 1
 fi
 
 log "Locking plugins from plugins.toml..."
