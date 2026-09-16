@@ -105,6 +105,18 @@ install_brew_packages() {
     rendered="$(mktemp)"
     "${CHEZMOI_EXECUTABLE:-chezmoi}" execute-template < "${BREWFILE}" > "${rendered}"
     [ -s "${rendered}" ] || die "Rendered Brewfile is empty — refusing to run brew bundle."
+
+    # Homebrew 7 refuses to load formulae/casks from non-official taps until
+    # they're trusted, and the Brewfile taps augani/dory (see Brewfile.darwin.tmpl).
+    # Without this, `brew bundle` dies on the Dory cask AFTER installing everything
+    # else, so the whole step fails and re-fails on every apply. Scoped to that one
+    # cask, not `--tap augani/dory`, so the trust covers exactly what the Brewfile
+    # declares. Guarded for brew < 7, which has no `trust` subcommand.
+    if brew help trust >/dev/null 2>&1; then
+        brew trust --cask augani/dory/dory || \
+            warn "brew trust failed for augani/dory/dory; the Dory cask will not install."
+    fi
+
     brew bundle --file="${rendered}"
     rm -f "${rendered}"
 }
