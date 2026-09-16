@@ -93,7 +93,20 @@ install_brew_packages() {
     # NB: `--no-lock` was removed from `brew bundle` (Brewfile.lock.json is no
     # longer generated), so passing it now errors. Modern brew bundle is
     # lockfile-free by default.
-    brew bundle --file=<(chezmoi execute-template < "${BREWFILE}")
+    #
+    # Render via $CHEZMOI_EXECUTABLE, not a bare `chezmoi`: the quickstart runs
+    # ~/.local/bin/chezmoi, which is NOT on a fresh machine's PATH, so a bare
+    # call is "command not found" here. And render to a real file, not a process
+    # substitution: brew bundle reports "0 Brewfile dependencies now installed"
+    # for an empty Brewfile and exits 0, so a failed render silently skipped
+    # EVERY Layer 3 package while this step recorded success (the symptom was a
+    # new Mac with Homebrew but no sheldon, hence no zsh plugins at all).
+    local rendered
+    rendered="$(mktemp)"
+    "${CHEZMOI_EXECUTABLE:-chezmoi}" execute-template < "${BREWFILE}" > "${rendered}"
+    [ -s "${rendered}" ] || die "Rendered Brewfile is empty — refusing to run brew bundle."
+    brew bundle --file="${rendered}"
+    rm -f "${rendered}"
 }
 
 # --- Helper: install packages from a newline-separated list, ignoring blank/comment lines ---
