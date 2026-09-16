@@ -10,6 +10,11 @@ set -euo pipefail
 log()  { printf '\033[1;34m[sheldon]\033[0m %s\n' "$*"; }
 have() { command -v "$1" >/dev/null 2>&1; }
 
+# Same PATH as a login shell (brew, ~/.cargo/bin, mise shims, ~/.local/bin). On a
+# fresh machine the shell that launched chezmoi predates all of those, so read
+# env.sh from the source dir rather than hand-listing dirs that drift from it.
+. "{{ .chezmoi.sourceDir }}/dot_config/shell/env.sh"
+
 {{- $ws := true }}{{ if hasKey . "isWorkstation" }}{{ $ws = .isWorkstation }}{{ end }}
 {{- if not $ws }}
 log "server/VM profile: skipping plugin provisioning."

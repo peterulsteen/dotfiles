@@ -12,9 +12,10 @@ set -euo pipefail
 
 log() { printf '\033[1;34m[bootstrap]\033[0m %s\n' "$*"; }
 
-# Ensure mise + its shims are on PATH (mise installer adds them but our shell
-# may not have re-sourced rc yet).
-export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
+# Same PATH as a login shell (brew, ~/.cargo/bin, mise shims, ~/.local/bin). On a
+# fresh machine the shell that launched chezmoi predates all of those, so read
+# env.sh from the source dir rather than hand-listing dirs that drift from it.
+. "{{ .chezmoi.sourceDir }}/dot_config/shell/env.sh"
 
 if ! command -v mise >/dev/null 2>&1; then
     echo "mise not found — step 20 must run first" >&2
