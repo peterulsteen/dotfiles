@@ -42,8 +42,9 @@ usage      = "latest"
 "aqua:sharkdp/bat"                  = "latest"
 "aqua:dandavison/delta"             = "latest"
 "aqua:jqlang/jq"                    = "latest"
-# tealdeer's latest tag shipped no binaries; build from source via cargo (binary is `tldr`).
-"cargo:tealdeer"                    = "latest"
+# Prebuilt again: tealdeer's releases briefly shipped no binaries (hence a stint
+# on cargo:tealdeer), and v1.9.0 restored them with checksums. Binary is `tldr`.
+"aqua:tealdeer-rs/tealdeer"         = "latest"
 "aqua:zellij-org/zellij"            = "latest"
 "aqua:casey/just"                   = "latest"
 "aqua:direnv/direnv"                = "latest"
