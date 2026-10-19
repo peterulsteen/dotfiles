@@ -4,6 +4,10 @@
 # .zprofile already sourced env.sh for login shells; the source-once guard makes
 # this a no-op there, and covers non-login interactive shells.
 [[ -f ~/.config/shell/env.sh ]] && source ~/.config/shell/env.sh
+# Machine-local extras (work exports, Keychain lookups, one-off aliases) that
+# don't belong in a public repo. Sourced before sheldon's compinit and before
+# `mise activate`, so fpath/PATH edits there still work and still lose to mise.
+[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
 
 # --- 2. zsh options + history --------------------------------------------------
 setopt AUTO_CD INTERACTIVE_COMMENTS

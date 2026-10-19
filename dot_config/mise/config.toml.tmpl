@@ -48,12 +48,14 @@ usage      = "latest"
 "aqua:zellij-org/zellij"            = "latest"
 "aqua:casey/just"                   = "latest"
 "aqua:direnv/direnv"                = "latest"
+yazi                                = "latest"   # terminal file manager
 
 # --- Dev tools ---
 "aqua:cli/cli"                      = "latest"   # gh
 "aqua:jesseduffield/lazygit"        = "latest"
 "aqua:neovim/neovim"                = "latest"
 "aqua:tree-sitter/tree-sitter"      = "latest"
+dagger                              = "latest"
 
 # --- Linters / formatters ---
 "aqua:rhysd/actionlint"             = "latest"
@@ -66,3 +68,12 @@ usage      = "latest"
 
 # --- Lua language server (for Neovim) ---
 "aqua:LuaLS/lua-language-server"    = "latest"
+
+[settings.self_update]
+auto = true   # mise is Layer 1: it keeps itself current
+
+[env]
+# clbudget's pnpm shim must beat node's pnpm. Declaring it as a mise path keeps it
+# first AND counts as mise-managed, so `mise doctor` stops flagging it. mise skips
+# missing dirs, so this is a no-op where clbudget isn't installed.
+_.path = ["~/.config/clbudget/bin"]
