@@ -15,9 +15,11 @@ elif [ -x /home/linuxbrew/.linuxbrew/bin/brew ]; then
   eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 fi
 
-# --- PATH: ~/.local/bin > mise shims > cargo > everything else. ---
+# --- PATH: ~/bin > ~/.local/bin > mise shims > cargo > Dory > everything else. ---
 # Iterate lowest-priority first; each prepend pushes earlier entries ahead.
-for _dir in "$HOME/.cargo/bin" "$HOME/.local/share/mise/shims" "$HOME/.local/bin"; do
+# Every PATH edit lives here, ahead of `mise activate` in the rc files, so mise's
+# tool paths still land first (`mise doctor` warns about anything added later).
+for _dir in "$HOME/.dory/bin" "$HOME/.cargo/bin" "$HOME/.local/share/mise/shims" "$HOME/.local/bin" "$HOME/bin"; do
   case ":$PATH:" in
     *":$_dir:"*) ;;                                  # already present
     *) [ -d "$_dir" ] && PATH="$_dir:$PATH" ;;
@@ -40,9 +42,12 @@ if [ -z "${PNPM_HOME:-}" ]; then
   esac
 fi
 export PNPM_HOME
-if [ -d "$PNPM_HOME" ]; then
-  case ":$PATH:" in *":$PNPM_HOME:"*) ;; *) PATH="$PNPM_HOME:$PATH"; export PATH ;; esac
-fi
+# Newer pnpm puts global bins in $PNPM_HOME/bin; older installs left them in the root.
+for _dir in "$PNPM_HOME" "$PNPM_HOME/bin"; do
+  case ":$PATH:" in *":$_dir:"*) ;; *) [ -d "$_dir" ] && PATH="$_dir:$PATH" ;; esac
+done
+unset _dir
+export PATH
 
 # --- 1Password SSH agent.
 # Prefer the 1Password agent over the GNOME keyring agent so that git commit
