@@ -30,8 +30,8 @@ fi
 ZSH_AUTOSUGGEST_STRATEGY=(history completion)
 
 # --- 4. Guarded aliases (machine-conditional; zsh-abbr's static file can't) ----
-# docker -> podman only when there's no real docker binary. On the work Mac Dory
-# provides a real `docker`, so leave it alone; on podman-only boxes, shim it.
+# docker -> podman only when there's no real docker binary. On the work Mac Docker
+# Desktop provides a real `docker`, so leave it alone; on podman-only boxes, shim it.
 if ! command -v docker >/dev/null 2>&1; then
   alias docker='podman'
   alias docker-compose='podman compose'
