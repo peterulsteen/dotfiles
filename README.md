@@ -38,7 +38,7 @@ This is the decision I keep coming back to. Every tool lives in **exactly one** 
 | Layer | Who owns upgrades | What lives here | Why |
 |---|---|---|---|
 | **1. Self-managing** | The tool's own installer / `<tool> self update` | `mise`, `uv`, `rustup`, `claude`, `codex` | Things that ship fast and update themselves well. I bootstrap them once and leave them alone. |
-| **2. mise** | `~/.config/mise/config.toml` | `node`, `go`, `terraform`, `opentofu`, `terragrunt`, `helm`, `k9s`, `postgres`, `gh`, `lazygit`, `neovim`, `fzf`, `ripgrep`, `jq`, `fd`, `bat`, `eza`, `zoxide`, `atuin`, `starship`, `zellij`, `just`, `direnv`, `delta`, `carapace`, `gitleaks`, `stylua`, `selene`, `tree-sitter`, `shellcheck`, `actionlint`, `tealdeer`, `lua-language-server` | Cross-platform single-binary tools and language runtimes. One declarative file, same on all four OSs. |
+| **2. mise** | `~/.config/mise/config.toml` | `node`, `go`, `terraform`, `opentofu`, `terragrunt`, `kubectl`, `helm`, `k9s`, `postgres`, `gh`, `lazygit`, `neovim`, `fzf`, `ripgrep`, `jq`, `fd`, `bat`, `eza`, `zoxide`, `atuin`, `starship`, `zellij`, `just`, `direnv`, `delta`, `carapace`, `gitleaks`, `stylua`, `selene`, `tree-sitter`, `shellcheck`, `actionlint`, `tealdeer`, `lua-language-server` | Cross-platform single-binary tools and language runtimes. One declarative file, same on all four OSs. |
 | **3. Native pkg mgr** | `brew` / `apt` / `pacman` / `dnf` | `zsh` (login shell; built-in on macOS), `sheldon`, `ghostty`, `gnupg`, `dory` (macOS), `podman`, `podman-compose`, `stats` (macOS), fonts, `coreutils`, `gnu-getopt`, `awscli`, `google-cloud-cli`, `pass`, `1password-cli` (personal machines only) | Things that need real OS integration: login shells, terminal emulators, system crypto, daemons, GUI apps, fonts. |
 
 My one hard rule: **a tool gets exactly one layer.** No `claude` in both `~/.local/bin` and a Brewfile, no `node` in both mise and brew, no `rust` in mise (rustup owns it). When two layers fight over the same tool, I get silent drift — so I don't let them.
@@ -115,7 +115,7 @@ I moved to [Zellij](https://zellij.dev) (Layer 2 / mise) after one too many rebo
 ├── dot_local/bin/                             → ~/.local/bin/ (on PATH)
 │   ├── zellij-layout-backup                   rotating off-cache backup of Zellij session layouts
 │   └── zj-restore                             fzf picker to resurrect a session from a backup archive
-├── Library/LaunchAgents/                      → ~/Library/LaunchAgents/ (macOS only)
+├── private_Library/private_LaunchAgents/      → ~/Library/LaunchAgents/ (macOS only, mode 0700)
 │   └── com.peterulsteen.zellij-layout-backup.plist.tmpl   runs the backup every 3 min
 ├── run_onchange_after_50-reload-launchagents.sh.tmpl      (re)loads user LaunchAgents (mac-only body)
 ├── dot_config/                                → ~/.config/

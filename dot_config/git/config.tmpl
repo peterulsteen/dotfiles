@@ -99,4 +99,9 @@
 # and the one signing key works for both, so only the author email changes.
 [includeIf "gitdir:{{ .workdir }}/"]
     path = config-work
+
+# The work scratch repo's cl/ scripts read this with `git config --global --get`
+# (no ~ expansion), so it lives here, absolute, rather than in config-work.
+[closedloop]
+    scratch = {{ .workdir | replace "~" .chezmoi.homeDir }}/scratch
 {{- end }}
