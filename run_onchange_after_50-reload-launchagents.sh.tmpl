@@ -6,7 +6,7 @@
 set -eu
 
 # Re-run trigger — changes when the plist template changes:
-# zellij-layout-backup plist sha256: {{ include "Library/LaunchAgents/com.peterulsteen.zellij-layout-backup.plist.tmpl" | sha256sum }}
+# zellij-layout-backup plist sha256: {{ include "private_Library/private_LaunchAgents/com.peterulsteen.zellij-layout-backup.plist.tmpl" | sha256sum }}
 
 domain="gui/$(id -u)"
 
