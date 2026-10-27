@@ -25,9 +25,12 @@ abbr "lg"="lazygit"
 
 # --- Container engine ---
 # docker/docker-compose -> podman is NOT set here: the static abbr format can't
-# express a `command -v docker` guard, and on the work Mac Dory provides a real
-# `docker`. .zshrc defines both shims as guarded aliases (only when no real
+# express a `command -v docker` guard, and on the work Mac Docker Desktop provides
+# a real `docker`. .zshrc defines both shims as guarded aliases (only when no real
 # docker binary exists).
+
+# --- Kubernetes ---
+abbr "k"="kubectl"
 
 # --- Mise ---
 abbr "mr"="mise run"
