@@ -39,7 +39,7 @@ This is the decision I keep coming back to. Every tool lives in **exactly one** 
 |---|---|---|---|
 | **1. Self-managing** | The tool's own installer / `<tool> self update` | `mise`, `uv`, `rustup`, `claude`, `codex` | Things that ship fast and update themselves well. I bootstrap them once and leave them alone. |
 | **2. mise** | `~/.config/mise/config.toml` | `node`, `go`, `terraform`, `opentofu`, `terragrunt`, `kubectl`, `helm`, `k9s`, `postgres`, `gh`, `lazygit`, `neovim`, `fzf`, `ripgrep`, `jq`, `fd`, `bat`, `eza`, `zoxide`, `atuin`, `starship`, `zellij`, `just`, `direnv`, `delta`, `carapace`, `gitleaks`, `stylua`, `selene`, `tree-sitter`, `shellcheck`, `actionlint`, `tealdeer`, `lua-language-server` | Cross-platform single-binary tools and language runtimes. One declarative file, same on all four OSs. |
-| **3. Native pkg mgr** | `brew` / `apt` / `pacman` / `dnf` | `zsh` (login shell; built-in on macOS), `sheldon`, `ghostty`, `gnupg`, `dory` (macOS), `podman`, `podman-compose`, `stats` (macOS), fonts, `coreutils`, `gnu-getopt`, `awscli`, `google-cloud-cli`, `pass`, `1password-cli` (personal machines only) | Things that need real OS integration: login shells, terminal emulators, system crypto, daemons, GUI apps, fonts. |
+| **3. Native pkg mgr** | `brew` / `apt` / `pacman` / `dnf` | `zsh` (login shell; built-in on macOS), `sheldon`, `ghostty`, `gnupg`, `dory` (macOS), `podman`, `podman-compose`, `stats` (macOS), `mosh`, `moshi-hook` (macOS; Moshi's installer on Linux), fonts, `coreutils`, `gnu-getopt`, `awscli`, `google-cloud-cli`, `pass`, `1password-cli` (personal machines only) | Things that need real OS integration: login shells, terminal emulators, system crypto, daemons, GUI apps, fonts. |
 
 My one hard rule: **a tool gets exactly one layer.** No `claude` in both `~/.local/bin` and a Brewfile, no `node` in both mise and brew, no `rust` in mise (rustup owns it). When two layers fight over the same tool, I get silent drift — so I don't let them.
 
@@ -97,6 +97,10 @@ I moved to [Zellij](https://zellij.dev) (Layer 2 / mise) after one too many rebo
 
 > **A privacy trade-off I made consciously:** `serialize_pane_viewport true` writes terminal *contents* to the local cache dir (`~/.cache/zellij` on Linux, `~/Library/Caches/org.Zellij-Contributors.Zellij` on macOS). It's local-only — never synced, never in this repo — but it's plaintext on disk, so I cap how much with `scrollback_lines_to_serialize`.
 
+## Phone access (Moshi)
+
+[Moshi](https://getmoshi.app) puts agent notifications, approvals, and a live Chat View of each session on my phone, through the `moshi-hook` daemon. `mosh` and `moshi-hook` come from the Brewfile on macOS (the `rjyo/moshi` formula is `brew trust`ed in step 10); on Linux `mosh` is in each `packages/*.txt` and `moshi-hook` comes from Moshi's own installer in step 20. Pairing (`moshi-hook pair`), `moshi-hook install`, and starting the service stay manual, since pairing needs a token from the phone. Mosh runs `mosh-server` over a non-interactive ssh, which never reads `.zprofile`, so `dot_zshenv` puts Homebrew's bin on PATH for exactly those shells. The daemon updates its own binary but never rewrites the agent hook configs it installed, so after an upgrade `moshi doctor` reports "hooks out of date" and Chat View can't open those sessions. A launchd agent (`com.peterulsteen.moshi-hooks-refresh`) closes the gap: it watches `/opt/homebrew/opt`, which Homebrew rewrites at the end of every upgrade, and re-runs `moshi install` whenever `moshi --version` changes (log: `~/Library/Logs/moshi-hooks-refresh.log`). Agents already running keep their old hooks until restarted. It no-ops where moshi isn't installed, and it's macOS-only like the Zellij backup agent.
+
 ## What's in this repo
 
 ```
@@ -111,12 +115,15 @@ I moved to [Zellij](https://zellij.dev) (Layer 2 / mise) after one too many rebo
 │   ├── debian.txt                             apt package list (Pop!_OS, Ubuntu)
 │   └── fedora.txt                             dnf package list
 ├── dot_zprofile / dot_zshrc                   zsh login env + interactive config
+├── dot_zshenv.tmpl                            PATH for non-interactive ssh commands (mosh-server)
 ├── dot_bashrc / dot_profile                   bash config for lean servers/VMs
 ├── dot_local/bin/                             → ~/.local/bin/ (on PATH)
 │   ├── zellij-layout-backup                   rotating off-cache backup of Zellij session layouts
-│   └── zj-restore                             fzf picker to resurrect a session from a backup archive
+│   ├── zj-restore                             fzf picker to resurrect a session from a backup archive
+│   └── moshi-hooks-refresh                    re-runs `moshi install` after a moshi-hook upgrade
 ├── private_Library/private_LaunchAgents/      → ~/Library/LaunchAgents/ (macOS only, mode 0700)
-│   └── com.peterulsteen.zellij-layout-backup.plist.tmpl   runs the backup every 3 min
+│   ├── com.peterulsteen.zellij-layout-backup.plist.tmpl   runs the backup every 3 min
+│   └── com.peterulsteen.moshi-hooks-refresh.plist.tmpl    runs the refresh on login + Homebrew relinks
 ├── run_onchange_after_50-reload-launchagents.sh.tmpl      (re)loads user LaunchAgents (mac-only body)
 ├── dot_config/                                → ~/.config/
 │   ├── shell/env.sh                           shared POSIX env + PATH (zsh + bash)

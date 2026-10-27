@@ -1,0 +1,27 @@
+#!/bin/sh
+# moshi-hooks-refresh — re-run `moshi install` whenever moshi-hook's version changes.
+#
+# WHY: the moshi-hook daemon updates its own binary (`moshi set auto-update`), but
+# never rewrites the agent hook configs it installed (~/.claude/settings.json and
+# the Codex/OpenCode/Pi plugins). It only logs "agent hooks missing or stale;
+# rerun install". Until someone does, `moshi doctor` reports "hooks out of date"
+# and the phone's Chat View cannot open those agents' sessions. Agents that were
+# already running keep their old hooks until restarted.
+#
+# Invoked by a launchd agent on macOS (com.peterulsteen.moshi-hooks-refresh) at
+# login and whenever Homebrew relinks a formula. Safe to run by hand; no-ops when
+# moshi is not installed or its version has not changed since the last run.
+set -eu
+
+# launchd's PATH has no Homebrew; append so an earlier PATH entry still wins.
+PATH="$PATH:/opt/homebrew/bin"
+command -v moshi >/dev/null 2>&1 || exit 0
+
+state="${XDG_STATE_HOME:-$HOME/.local/state}/moshi-hooks-refresh"
+version="$(moshi --version)"
+[ "$version" = "$(cat "$state/version" 2>/dev/null || true)" ] && exit 0
+
+echo "moshi-hooks-refresh: $(date '+%Y-%m-%d %H:%M:%S') $version, reinstalling agent hooks"
+moshi install
+mkdir -p "$state"
+printf '%s\n' "$version" > "$state/version"

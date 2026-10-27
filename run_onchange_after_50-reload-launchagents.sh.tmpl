@@ -7,6 +7,7 @@ set -eu
 
 # Re-run trigger — changes when the plist template changes:
 # zellij-layout-backup plist sha256: {{ include "private_Library/private_LaunchAgents/com.peterulsteen.zellij-layout-backup.plist.tmpl" | sha256sum }}
+# moshi-hooks-refresh plist sha256: {{ include "private_Library/private_LaunchAgents/com.peterulsteen.moshi-hooks-refresh.plist.tmpl" | sha256sum }}
 
 domain="gui/$(id -u)"
 
@@ -24,6 +25,7 @@ reload_agent() {
 mkdir -p "$HOME/.zellij-layout-backups"
 
 reload_agent com.peterulsteen.zellij-layout-backup
+reload_agent com.peterulsteen.moshi-hooks-refresh
 {{- else -}}
 # Not macOS — no launchd. (A systemd user timer would go here for Linux.)
 :
