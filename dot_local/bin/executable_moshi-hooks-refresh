@@ -8,14 +8,19 @@
 # and the phone's Chat View cannot open those agents' sessions. Agents that were
 # already running keep their old hooks until restarted.
 #
-# Invoked by a launchd agent on macOS (com.peterulsteen.moshi-hooks-refresh) at
-# login and whenever Homebrew relinks a formula. Safe to run by hand; no-ops when
-# moshi is not installed or its version has not changed since the last run.
+# Invoked at login and whenever moshi-hook may have been replaced: by a launchd
+# agent on macOS (com.peterulsteen.moshi-hooks-refresh, on Homebrew relinks) and a
+# systemd user path unit on Linux (moshi-hooks-refresh.path, on ~/.local/bin
+# changes). Safe to run by hand; no-ops when moshi is not installed, this host is
+# not paired yet (pairing comes before the first `moshi install`), or the version
+# has not changed since the last run.
 set -eu
 
-# launchd's PATH has no Homebrew; append so an earlier PATH entry still wins.
-PATH="$PATH:/opt/homebrew/bin"
+# launchd and systemd user PATHs have neither Homebrew nor ~/.local/bin (where
+# Moshi's Linux installer puts it); append so an earlier PATH entry still wins.
+PATH="$PATH:/opt/homebrew/bin:$HOME/.local/bin"
 command -v moshi >/dev/null 2>&1 || exit 0
+moshi status 2>/dev/null | grep -q '^status:[[:space:]]*paired$' || exit 0
 
 state="${XDG_STATE_HOME:-$HOME/.local/state}/moshi-hooks-refresh"
 version="$(moshi --version)"

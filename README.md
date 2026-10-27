@@ -99,7 +99,7 @@ I moved to [Zellij](https://zellij.dev) (Layer 2 / mise) after one too many rebo
 
 ## Phone access (Moshi)
 
-[Moshi](https://getmoshi.app) puts agent notifications, approvals, and a live Chat View of each session on my phone, through the `moshi-hook` daemon. `mosh` and `moshi-hook` come from the Brewfile on macOS (the `rjyo/moshi` formula is `brew trust`ed in step 10); on Linux `mosh` is in each `packages/*.txt` and `moshi-hook` comes from Moshi's own installer in step 20. Pairing (`moshi-hook pair`), `moshi-hook install`, and starting the service stay manual, since pairing needs a token from the phone. Mosh runs `mosh-server` over a non-interactive ssh, which never reads `.zprofile`, so `dot_zshenv` puts Homebrew's bin on PATH for exactly those shells. The daemon updates its own binary but never rewrites the agent hook configs it installed, so after an upgrade `moshi doctor` reports "hooks out of date" and Chat View can't open those sessions. A launchd agent (`com.peterulsteen.moshi-hooks-refresh`) closes the gap: it watches `/opt/homebrew/opt`, which Homebrew rewrites at the end of every upgrade, and re-runs `moshi install` whenever `moshi --version` changes (log: `~/Library/Logs/moshi-hooks-refresh.log`). Agents already running keep their old hooks until restarted. It no-ops where moshi isn't installed, and it's macOS-only like the Zellij backup agent.
+[Moshi](https://getmoshi.app) puts agent notifications, approvals, and a live Chat View of each session on my phone, through the `moshi-hook` daemon. `mosh` and `moshi-hook` come from the Brewfile on macOS (the `rjyo/moshi` formula is `brew trust`ed in step 10); on Linux `mosh` is in each `packages/*.txt` and `moshi-hook` comes from Moshi's own installer in step 20. Pairing (`moshi-hook pair`), `moshi-hook install`, and starting the service stay manual, since pairing needs a token from the phone. Mosh runs `mosh-server` over a non-interactive ssh, which never reads `.zprofile`, so `dot_zshenv` puts Homebrew's bin on PATH for exactly those shells. The daemon updates its own binary but never rewrites the agent hook configs it installed, so after an upgrade `moshi doctor` reports "hooks out of date" and Chat View can't open those sessions. A launchd agent (`com.peterulsteen.moshi-hooks-refresh`) closes the gap: it watches `/opt/homebrew/opt`, which Homebrew rewrites at the end of every upgrade, and re-runs `moshi install` whenever `moshi --version` changes (log: `~/Library/Logs/moshi-hooks-refresh.log`). Agents already running keep their old hooks until restarted. On Linux a systemd user path unit (`moshi-hooks-refresh.path`) does the same, watching `~/.local/bin`, where Moshi's installer and `moshi-hook update` put the binary. Either way it no-ops where moshi isn't installed or the host isn't paired yet.
 
 ## What's in this repo
 
@@ -124,7 +124,7 @@ I moved to [Zellij](https://zellij.dev) (Layer 2 / mise) after one too many rebo
 ├── private_Library/private_LaunchAgents/      → ~/Library/LaunchAgents/ (macOS only, mode 0700)
 │   ├── com.peterulsteen.zellij-layout-backup.plist.tmpl   runs the backup every 3 min
 │   └── com.peterulsteen.moshi-hooks-refresh.plist.tmpl    runs the refresh on login + Homebrew relinks
-├── run_onchange_after_50-reload-launchagents.sh.tmpl      (re)loads user LaunchAgents (mac-only body)
+├── run_onchange_after_50-reload-launchagents.sh.tmpl      (re)loads user LaunchAgents / enables systemd user units
 ├── dot_config/                                → ~/.config/
 │   ├── shell/env.sh                           shared POSIX env + PATH (zsh + bash)
 │   ├── sheldon/plugins.toml                   zsh plugin manifest (sheldon)
@@ -137,6 +137,7 @@ I moved to [Zellij](https://zellij.dev) (Layer 2 / mise) after one too many rebo
 │   ├── mise/config.toml.tmpl                  mise tools manifest
 │   ├── nvim/                                  Neovim (LazyVim)
 │   ├── starship/starship.toml                 prompt config
+│   ├── systemd/user/moshi-hooks-refresh.*     Linux: re-run `moshi install` after moshi-hook updates
 │   └── zellij/                                multiplexer (config.kdl + layouts/)
 ├── run_onchange_before_10-install-package-managers.sh.tmpl   (re-runs when Brewfile/packages/*.txt change)
 ├── run_once_before_20-install-self-managers.sh.tmpl

@@ -1,0 +1,13 @@
+# Linux counterpart of the com.peterulsteen.moshi-hooks-refresh launchd agent.
+# Moshi's installer and `moshi-hook update` replace ~/.local/bin/moshi-hook; any
+# change in that dir starts the refresh, which no-ops on an unchanged version.
+# Enabled by run_onchange_after_50-reload-launchagents.sh.tmpl.
+[Unit]
+Description=Watch ~/.local/bin for moshi-hook updates
+
+[Path]
+PathChanged=%h/.local/bin
+Unit=moshi-hooks-refresh.service
+
+[Install]
+WantedBy=default.target
