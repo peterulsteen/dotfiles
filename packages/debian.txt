@@ -8,6 +8,7 @@ gnupg
 pinentry-tty
 coreutils
 util-linux
+mosh
 pass
 awscli
 google-cloud-cli

@@ -70,6 +70,20 @@ else
 fi
 {{- end }}
 
+# --- moshi-hook (Moshi phone bridge) ---
+# macOS installs it from the rjyo/moshi tap via the Brewfile in step 10. Elsewhere
+# Moshi's own installer drops it in ~/.local/bin and `moshi-hook update` keeps it
+# current. Pairing and `moshi-hook service install` stay manual: pairing needs a
+# token from the phone.
+{{- if ne .chezmoi.os "darwin" }}
+if have moshi-hook; then
+    log "moshi-hook already installed: $(moshi-hook --version)"
+else
+    log "Installing moshi-hook..."
+    curl -fsSL https://getmoshi.app/install.sh | MOSHI_HOOK_SKIP_FIRST_RUN=1 sh
+fi
+{{- end }}
+
 # Note: Codex is installed in step 30 (after mise has provisioned Node), via
 # `npm install -g @openai/codex`. Keeping all npm-based installs in one place
 # avoids "tool A needs tool B that won't exist until step C" ordering bugs.

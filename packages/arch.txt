@@ -6,6 +6,7 @@ gnupg
 pinentry
 coreutils
 util-linux
+mosh
 pass
 aws-cli-v2
 google-cloud-cli

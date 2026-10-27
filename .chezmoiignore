@@ -50,6 +50,7 @@ Library
 # --- Linux-only files: ignore on darwin ---
 {{- if eq .chezmoi.os "darwin" }}
 packages
+.config/systemd
 {{- end }}
 
 # --- Lean server/VM profile: skip the full workstation interactive stack ---

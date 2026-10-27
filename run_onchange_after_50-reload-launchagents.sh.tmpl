@@ -1,12 +1,13 @@
 #!/bin/sh
-# Load / reload user LaunchAgents managed by this repo. Runs after `chezmoi apply`
-# and re-runs whenever a managed plist's content changes (the hashes below force
-# a re-render when a plist template is edited).
+# Load / reload the user LaunchAgents (macOS) or systemd user units (Linux) managed
+# by this repo. Runs after `chezmoi apply` and re-runs whenever a managed plist or
+# unit changes (the hashes below force a re-render when one is edited).
 {{ if eq .chezmoi.os "darwin" -}}
 set -eu
 
 # Re-run trigger — changes when the plist template changes:
 # zellij-layout-backup plist sha256: {{ include "private_Library/private_LaunchAgents/com.peterulsteen.zellij-layout-backup.plist.tmpl" | sha256sum }}
+# moshi-hooks-refresh plist sha256: {{ include "private_Library/private_LaunchAgents/com.peterulsteen.moshi-hooks-refresh.plist.tmpl" | sha256sum }}
 
 domain="gui/$(id -u)"
 
@@ -24,7 +25,21 @@ reload_agent() {
 mkdir -p "$HOME/.zellij-layout-backups"
 
 reload_agent com.peterulsteen.zellij-layout-backup
+reload_agent com.peterulsteen.moshi-hooks-refresh
 {{- else -}}
-# Not macOS — no launchd. (A systemd user timer would go here for Linux.)
-:
+# Not macOS — systemd user units stand in for launchd. (The zellij backup still
+# has none; a systemd user timer is its Linux TODO.)
+set -eu
+
+# Re-run trigger — changes when a unit file changes:
+# moshi-hooks-refresh.path sha256: {{ include "dot_config/systemd/user/moshi-hooks-refresh.path" | sha256sum }}
+# moshi-hooks-refresh.service sha256: {{ include "dot_config/systemd/user/moshi-hooks-refresh.service" | sha256sum }}
+
+# No user systemd (container, or ssh without a user session): skip, don't fail apply.
+if ! systemctl --user daemon-reload 2>/dev/null; then
+    echo "reload-launchagents: no systemd user manager; skipping user units" >&2
+    exit 0
+fi
+systemctl --user enable --now moshi-hooks-refresh.path moshi-hooks-refresh.service
+echo "reload-launchagents: (re)enabled moshi-hooks-refresh.path/.service" >&2
 {{- end }}

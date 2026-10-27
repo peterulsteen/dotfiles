@@ -45,6 +45,16 @@ brew "awscli"
 # Auth/config lives in ~/.config/gcloud (secret-bearing, .chezmoiignore'd).
 cask "gcloud-cli"
 
+# --- Phone access (Moshi) ---
+# mosh: the phone's Mosh transport runs `mosh-server` over a non-interactive ssh,
+# which finds it via the PATH line in dot_zshenv.tmpl.
+# moshi-hook: daemon + agent hooks. Trusted in step 10 (third-party tap). Pairing
+# and `brew services start moshi-hook` stay manual: pairing needs a token from
+# the phone. Hooks are refreshed after upgrades by com.peterulsteen.moshi-hooks-refresh.
+brew "mosh"
+tap "rjyo/moshi"
+brew "rjyo/moshi/moshi-hook"
+
 # --- Terminal emulator ---
 cask "ghostty"
 

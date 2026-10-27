@@ -1,0 +1,8 @@
+# >>> clbudget >>>
+[[ -o interactive ]] || path=($HOME/.config/clbudget/bin ${path:#$HOME/.config/clbudget/bin})
+# <<< clbudget <<<
+{{- if eq .chezmoi.os "darwin" }}
+# >>> mosh over ssh: non-interactive shells need mosh-server on PATH (appended, so it never shadows anything) >>>
+[[ -o interactive ]] || path+=(/opt/homebrew/bin)
+# <<< mosh >>>
+{{- end }}

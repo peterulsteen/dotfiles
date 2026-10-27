@@ -1,0 +1,11 @@
+# Started by moshi-hooks-refresh.path, and once per login via default.target
+# (the launchd agent's RunAtLoad). See ~/.local/bin/moshi-hooks-refresh.
+[Unit]
+Description=Re-install Moshi agent hooks after a moshi-hook update
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/moshi-hooks-refresh
+
+[Install]
+WantedBy=default.target

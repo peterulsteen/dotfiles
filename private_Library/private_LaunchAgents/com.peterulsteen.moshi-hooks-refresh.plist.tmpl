@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Re-installs Moshi agent hooks after moshi-hook upgrades. See
+     ~/.local/bin/moshi-hooks-refresh and the repo README (Moshi).
+     Loaded/reloaded by run_onchange_after_50-reload-launchagents.sh.tmpl. -->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.peterulsteen.moshi-hooks-refresh</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>{{ .chezmoi.homeDir }}/.local/bin/moshi-hooks-refresh</string>
+    </array>
+
+    <!-- Homebrew recreates opt/<formula> only after the new keg is poured
+         (FormulaInstaller#finish -> Keg#optlink), so this fires once the new moshi
+         binary is in place. Other formulas' upgrades fire it too; the script
+         no-ops on an unchanged version. -->
+    <key>WatchPaths</key>
+    <array>
+        <string>/opt/homebrew/opt</string>
+    </array>
+
+    <!-- Catch an upgrade that landed before this agent was loaded. -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+
+    <key>StandardOutPath</key>
+    <string>{{ .chezmoi.homeDir }}/Library/Logs/moshi-hooks-refresh.log</string>
+    <key>StandardErrorPath</key>
+    <string>{{ .chezmoi.homeDir }}/Library/Logs/moshi-hooks-refresh.log</string>
+</dict>
+</plist>
