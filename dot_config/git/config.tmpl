@@ -1,3 +1,12 @@
+{{- $omarchy := false }}{{ if hasKey . "isOmarchy" }}{{ $omarchy = .isOmarchy }}{{ end }}
+{{- if $omarchy -}}
+# Omarchy's packaged defaults (aliases, column/branch/tag sorting, verbose
+# commits, rerere autoupdate) come in first, so they keep flowing through on
+# Omarchy updates while every setting below overrides them (git: last value wins).
+[include]
+    path = /usr/share/omarchy/config/git/config
+
+{{ end -}}
 [user]
     name = {{ .name | quote }}
     email = {{ .email | quote }}

@@ -1,6 +1,15 @@
 # mise tools manifest (Layer 2)
 # Source of truth for all cross-platform CLIs and language runtimes.
-# Same file applies to macOS, Pop!_OS, Arch, and Fedora.
+# Same file applies to macOS, Pop!_OS, Arch/Omarchy, and Fedora.
+#
+# Deployed as ~/.config/mise/config.local.toml, NOT config.toml: mise gives
+# config.local.toml priority over config.toml, and `mise use -g` writes to
+# config.toml unless this file already declares the tool. So config.toml belongs
+# to ad-hoc `mise use -g` (and Omarchy's ~/.local/bin wrappers, which run
+# `mise use -g claude|codex|gh|...` on every launch), while this file wins any
+# conflict, e.g. Omarchy pinning node to an exact version. gh stays spelled
+# "aqua:cli/cli" below so the wrappers' `mise use -g gh` lands in config.toml
+# instead of rewriting this file.
 #
 # DO NOT add tools that are owned by Layer 1 (self-managing: mise, uv, rustup, claude, codex)
 # or by Layer 3 (OS-native: zsh, podman, gnupg, etc.).
@@ -11,6 +20,8 @@
 # --- Language runtimes ---
 node       = "lts"
 go         = "latest"
+# Node 25+ stopped bundling corepack, which step 30 uses to provide pnpm/yarn.
+"npm:corepack" = "latest"
 
 # --- Infrastructure / IaC ---
 terraform  = "latest"
@@ -71,8 +82,14 @@ turbo                               = "latest"   # npm:turbo; defers to a repo's
 # --- Lua language server (for Neovim) ---
 "aqua:LuaLS/lua-language-server"    = "latest"
 
+{{- $omarchy := false }}{{ if hasKey . "isOmarchy" }}{{ $omarchy = .isOmarchy }}{{ end }}
+{{- if not $omarchy }}
+
 [settings.self_update]
 auto = true   # mise is Layer 1: it keeps itself current
+{{- end }}
+{{- /* Omarchy installs mise from pacman (mise-bin), so `omarchy update` keeps
+       it current and mise's own self-update doesn't apply. */}}
 
 [env]
 # clbudget's pnpm shim must beat node's pnpm. Declaring it as a mise path keeps it

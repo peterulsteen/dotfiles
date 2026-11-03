@@ -111,12 +111,13 @@ I moved to [Zellij](https://zellij.dev) (Layer 2 / mise) after one too many rebo
 ├── .github/workflows/gitleaks.yml             CI secret scan
 ├── Brewfile.darwin.tmpl                        macOS Homebrew formulas + casks
 ├── packages/
-│   ├── arch.txt                               pacman package list
+│   ├── arch.txt                               pacman package list (Arch + Omarchy)
+│   ├── arch-aur.txt                           AUR-only packages (built with yay / makepkg)
 │   ├── debian.txt                             apt package list (Pop!_OS, Ubuntu)
 │   └── fedora.txt                             dnf package list
 ├── dot_zprofile / dot_zshrc                   zsh login env + interactive config
 ├── dot_zshenv.tmpl                            PATH for non-interactive ssh commands (mosh-server)
-├── dot_bashrc / dot_profile                   bash config for lean servers/VMs
+├── dot_bashrc.tmpl / dot_profile              bash config for lean servers/VMs (Omarchy: layered on Omarchy's bash)
 ├── dot_local/bin/                             → ~/.local/bin/ (on PATH)
 │   ├── zellij-layout-backup                   rotating off-cache backup of Zellij session layouts
 │   ├── zj-restore                             fzf picker to resurrect a session from a backup archive
@@ -129,12 +130,12 @@ I moved to [Zellij](https://zellij.dev) (Layer 2 / mise) after one too many rebo
 │   ├── shell/env.sh                           shared POSIX env + PATH (zsh + bash)
 │   ├── sheldon/plugins.toml                   zsh plugin manifest (sheldon)
 │   ├── zsh-abbr/user-abbreviations            fish-style abbreviations for zsh
-│   ├── ghostty/                               terminal emulator config
+│   ├── ghostty/modify_config                  terminal config (on Omarchy: adds a block to Omarchy's file)
 │   ├── git/
 │   │   ├── config.tmpl                        git config (per-machine email/signing + work includeIf)
 │   │   ├── hooks/                             global gitleaks pre-commit hook
 │   │   └── ignore                             global gitignore
-│   ├── mise/config.toml.tmpl                  mise tools manifest
+│   ├── mise/config.local.toml.tmpl            mise tools manifest (→ ~/.config/mise/config.local.toml)
 │   ├── nvim/                                  Neovim (LazyVim)
 │   ├── starship/starship.toml                 prompt config
 │   ├── systemd/user/moshi-hooks-refresh.*     Linux: re-run `moshi install` after moshi-hook updates
@@ -154,10 +155,20 @@ I moved to [Zellij](https://zellij.dev) (Layer 2 / mise) after one too many rebo
 |---|---|---|
 | macOS (Apple Silicon, work-issued) | Homebrew | My daily driver — most exercised. |
 | Pop!_OS (personal ThinkPad) | apt | My personal machine. |
-| Omarchy / Arch | pacman | I run it occasionally; config is OS-correct but less battle-tested. |
+| Omarchy / Arch | pacman (+ yay for AUR) | Personal Linux machine. On Omarchy the config layers on Omarchy's defaults instead of replacing them (see below). |
 | Fedora | dnf | Same — supported, lightly used. |
 
 I keep per-OS divergence small on purpose. The few differences are handled with chezmoi templates (`{{ if eq .chezmoi.os "darwin" }}`) and `.chezmoiignore` rules; the vast majority of the config and tooling is identical across all four.
+
+## Omarchy
+
+I like Omarchy's defaults, so on an Omarchy install the repo builds on them rather than replacing them:
+
+- Ghostty, git and bash keep Omarchy's config (themes, font commands, aliases, Shift+Enter handling) and add mine on top.
+- Neovim keeps Omarchy's theme plugins and remote clipboard; its lockfiles stay machine-local.
+- No full `pacman -Syu` during bootstrap. Run `omarchy update` first, then `chezmoi init --apply`.
+- Omarchy's Docker is used instead of Podman, and `google-cloud-cli` comes from the AUR via `yay`.
+- After `chsh` to zsh, Omarchy's handy bash aliases and tmux layout helpers (`t`, `n`, `cx`, `tdl`, …) still work.
 
 ## Secrets
 
@@ -201,7 +212,7 @@ sudo dnf upgrade
 
 It's MIT-licensed — go for it. A few starting points:
 
-- Tool list lives in `dot_config/mise/config.toml.tmpl`.
+- Tool list lives in `dot_config/mise/config.local.toml.tmpl`.
 - OS-native packages live in `Brewfile.darwin.tmpl` and `packages/*.txt`.
 - The three-layer model is the part worth stealing; the specific tools are just mine.
 - Enable push protection on your fork, and keep the gitleaks hook — a public dotfiles repo is an easy place to leak something.

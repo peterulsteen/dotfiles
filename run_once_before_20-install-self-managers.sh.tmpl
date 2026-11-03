@@ -48,6 +48,9 @@ else
 fi
 
 # --- Claude Code CLI ---
+# On Omarchy, `claude` (and `codex`) already exist as ~/.local/bin wrappers that
+# install and run them through mise, so this and step 30's codex install skip.
+# That is a deliberate Layer-1 exception: Omarchy keeps them updated.
 if have claude; then
     log "claude already installed"
 else
@@ -56,8 +59,9 @@ else
 fi
 
 # --- sheldon (zsh plugin manager) ---
-# Workstations only (servers stay lean). macOS installs it via the Brewfile in
-# step 10; other workstations build it with cargo (rustup is installed above).
+# Workstations only (servers stay lean). macOS (Brewfile) and Arch/Omarchy
+# (packages/arch.txt) install it in step 10, so this skips there; other
+# workstations build it with cargo (rustup is installed above).
 {{- $ws := true }}{{ if hasKey . "isWorkstation" }}{{ $ws = .isWorkstation }}{{ end }}
 {{- if and $ws (ne .chezmoi.os "darwin") }}
 if have sheldon; then

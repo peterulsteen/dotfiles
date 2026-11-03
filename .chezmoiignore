@@ -61,3 +61,13 @@ packages
 .config/sheldon
 .config/zsh-abbr
 {{- end }}
+
+# --- Omarchy: leave Neovim's machine-written state files to Omarchy ---
+# Omarchy's LazyVim adds ~15 theme plugins and the neo-tree extra that the Mac
+# doesn't have, so a shared lazy-lock.json / lazyvim.json would churn between
+# machines. The Mac keeps the committed, reproducible copies.
+{{- $omarchy := false }}{{ if hasKey . "isOmarchy" }}{{ $omarchy = .isOmarchy }}{{ end }}
+{{- if $omarchy }}
+.config/nvim/lazy-lock.json
+.config/nvim/lazyvim.json
+{{- end }}

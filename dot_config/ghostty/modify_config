@@ -1,8 +1,33 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /*
+  Modify template: chezmoi hands in the current ~/.config/ghostty/config as
+  .chezmoi.stdin and writes back whatever this renders.
+
+  Omarchy: Omarchy owns the file. `omarchy font set`, its text-size command and
+  its migrations edit it in place, and it carries the live-theme include, so
+  keep it as-is and only maintain the marked dotfiles block at the end (Ghostty:
+  last value wins). An empty/missing file is seeded from Omarchy's packaged
+  default.
+
+  Everywhere else: this repo owns the whole file and stdin is ignored.
+*/ -}}
+{{- $omarchy := false }}{{ if hasKey . "isOmarchy" }}{{ $omarchy = .isOmarchy }}{{ end -}}
+{{- if $omarchy -}}
+{{-   $base := .chezmoi.stdin -}}
+{{-   if not (trim $base) }}{{ $base = include "/usr/share/omarchy/config/ghostty/config" }}{{ end -}}
+{{-   $base = regexReplaceAll "(?s)\n*# >>> dotfiles >>>.*?# <<< dotfiles <<<\n*" $base "" -}}
+{{-   $base = regexReplaceAll "\n+$" $base "" -}}
+{{ $base }}
+
+# >>> dotfiles >>>
+# Managed by chezmoi from the dotfiles repo; everything above is Omarchy's.
+{{ else -}}
 theme = Catppuccin Mocha
 font-family = JetBrainsMono Nerd Font
 font-feature = calt
 font-feature = liga
 
+{{ end -}}
 # --- Memory bounds (defensive) ----------------------------------------------
 # Explicit, modest caps on the two per-surface buffers that can grow with heavy
 # agent output. NOTE: these are ~10MB-scale limits — they do NOT explain a 50GB
@@ -22,3 +47,6 @@ image-storage-limit = 320000000
 #   zj-restore              # resurrect a session from a rotating backup archive
 # Editor terminals (VS Code/Cursor, Superset, JetBrains) already got a plain
 # shell before and still do.
+{{- if $omarchy }}
+# <<< dotfiles <<<
+{{- end }}

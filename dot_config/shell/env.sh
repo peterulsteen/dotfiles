@@ -28,6 +28,12 @@ done
 unset _dir
 export PATH
 
+# --- Omarchy: OMARCHY_PATH (+ its PATH tweaks) for every shell, zsh included.
+# Omarchy wires this into bash and the Hyprland session only. Sourced AFTER the
+# loop above: it appends mise shims + ~/.local/bin when missing, and the loop
+# skips dirs that are already present, so the other order would demote them.
+[ -r /usr/share/omarchy/default/bash/env-bootstrap ] && . /usr/share/omarchy/default/bash/env-bootstrap
+
 # uv writes ~/.local/bin/env (POSIX) with its own PATH wiring.
 [ -f "$HOME/.local/bin/env" ] && . "$HOME/.local/bin/env"
 
@@ -71,14 +77,25 @@ export CLOUDSDK_CORE_DISABLE_USAGE_REPORTING=true
 # Point Docker-expecting tools (Testcontainers, kind) at the rootless podman
 # socket without running as root. Guarded on the socket, so it's a no-op on
 # macOS (podman machine uses a different socket) and on boxes without podman.
-if [ -S "${XDG_RUNTIME_DIR:-}/podman/podman.sock" ]; then
+# Also skipped when a real `docker` exists (Omarchy, Docker Desktop), so that
+# enabling podman.socket never silently redirects the docker CLI to Podman.
+if [ -S "${XDG_RUNTIME_DIR:-}/podman/podman.sock" ] && ! command -v docker >/dev/null 2>&1; then
   export DOCKER_HOST="unix://$XDG_RUNTIME_DIR/podman/podman.sock"
   export KIND_EXPERIMENTAL_PROVIDER=podman
 fi
 
 # --- Editor + tooling env ---
-export EDITOR=nvim
-export VISUAL=nvim
-export BAT_THEME="TwoDark"
+# Defaults only: keep an editor the session already chose. On Omarchy that is
+# `omarchy-launch-editor`, which follows the editor picked in Omarchy's menu.
+export EDITOR="${EDITOR:-nvim}"
+export VISUAL="${VISUAL:-nvim}"
+if [ -n "${OMARCHY_PATH:-}" ]; then
+  # ansi follows the current Omarchy theme (Omarchy's bash setting, mirrored here
+  # for zsh). BROWSER opens links from gh & co. detached from the terminal.
+  export BAT_THEME=ansi
+  export BROWSER="${BROWSER:-omarchy-launch-browser}"
+else
+  export BAT_THEME="TwoDark"
+fi
 export MANPAGER="sh -c 'col -bx | bat -l man -p'"
 export MANROFFOPT="-c"

@@ -46,13 +46,51 @@ if command -v system76-power >/dev/null 2>&1; then
   alias gpu-stat='system76-power graphics; system76-power profile'
 fi
 
+# Omarchy's shell conveniences, which it only ships for bash. OMARCHY_PATH comes
+# from env.sh, so this is a no-op off Omarchy. Mirrors the parts of
+# $OMARCHY_PATH/default/bash/{aliases,init} that make sense next to this repo's
+# abbreviations, eza/zoxide setup and atuin.
+if [[ -n ${OMARCHY_PATH:-} ]]; then
+  n() { if (( $# == 0 )); then command nvim .; else command nvim "$@"; fi }
+  alias t='tmux attach || tmux new -s Work'
+  alias h='herdr'
+  alias d='docker'
+  alias a='omarchy-agent --inline'
+  alias c='opencode --auto'
+  alias cx='printf "\033[2J\033[3J\033[H" && claude --permission-mode auto'
+  alias cy='codex --approve-for-me'
+  alias ic='tdl c' ix='tdl cx' icx='tdl c cx'
+  alias mup='MISE_MINIMUM_RELEASE_AGE=0 mise up'
+  alias ff="fzf --preview 'bat --style=numbers --color=always {}'"
+  alias eff='$EDITOR "$(ff)"'
+  alias decompress='tar -xzf'
+  open() { xdg-open "$@" >/dev/null 2>&1 &! }
+
+  # Omarchy's layout/helper functions (tmux & herdr dev layouts, port forwards,
+  # rsync watchers, compress, format-drive) are bash, so run them in bash. They
+  # only drive tmux/herdr/ssh and never change this shell's directory. Omarchy's
+  # worktree helpers (ga/gd) do, so they stay bash-only; `gd` here is git diff.
+  _omarchy_bash_fn() {
+    bash -c 'for f in "$OMARCHY_PATH"/default/bash/fns/*; do . "$f"; done; "$@"' omarchy-fn "$@"
+  }
+  for _fn in tdl tds tdlm tsl hdl hds hdlm hsl compress rsw lsw dsw fip dip lip format-drive; do
+    eval "${_fn}() { _omarchy_bash_fn ${_fn} \"\$@\"; }"
+  done
+  unset _fn
+
+  # fzf's Ctrl-T (files) and Alt-C (cd) widgets, from the fzf binary itself so
+  # the script matches the mise-installed version. Its Ctrl-R is taken over by
+  # atuin, which initializes later in this file.
+  command -v fzf >/dev/null 2>&1 && source <(fzf --zsh)
+fi
+
 # --- 5. Standalone tools (starship/zoxide/direnv/carapace/kubectl/mise/atuin) --
 command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"
 command -v zoxide   >/dev/null 2>&1 && eval "$(zoxide init zsh)"
 command -v direnv   >/dev/null 2>&1 && eval "$(direnv hook zsh)"
 # Runs after compinit (sequenced inside plugins.toml, sec. 3) since it registers
 # compdef bindings per-command. Bridges gh/kubectl/docker/etc. with no per-tool
-# completion file to generate or refresh -- see dot_config/mise/config.toml.tmpl.
+# completion file to generate or refresh -- see dot_config/mise/config.local.toml.tmpl.
 # Before `mise activate`: its init prepends carapace's bin dir to PATH, which
 # would otherwise shadow mise's tools (and trip `mise doctor`).
 command -v carapace >/dev/null 2>&1 && eval "$(carapace _carapace zsh)"
