@@ -13,6 +13,7 @@
 # Brewfile hash: {{ include "Brewfile.darwin.tmpl" | sha256sum }}
 # debian.txt hash: {{ include "packages/debian.txt" | sha256sum }}
 # arch.txt hash: {{ include "packages/arch.txt" | sha256sum }}
+# arch-aur.txt hash: {{ include "packages/arch-aur.txt" | sha256sum }}
 # fedora.txt hash: {{ include "packages/fedora.txt" | sha256sum }}
 #
 # Layer 1 self-managers (mise, uv, rustup, claude, codex) are installed in step 20.
@@ -22,7 +23,7 @@
 # NOT evaluate them here -- .chezmoi.osRelease is absent on macOS and would
 # error under missingkey=error):
 #   .chezmoi.os               → "darwin" | "linux"
-#   .chezmoi.osRelease.id     → "pop" | "ubuntu" | "arch" | "fedora" (Linux only)
+#   .chezmoi.osRelease.id     → "pop" | "ubuntu" | "arch" | "omarchy" | "fedora" (Linux only)
 #   .chezmoi.osRelease.idLike → e.g. "ubuntu debian" for Pop!_OS
 
 set -euo pipefail
@@ -49,6 +50,8 @@ DISTRO_LIKE=""
 # `chezmoi init` for this prompt doesn't unexpectedly gain a new package.
 {{- $isPersonal := false }}{{ if hasKey . "isPersonal" }}{{ $isPersonal = .isPersonal }}{{ end }}
 IS_PERSONAL={{ $isPersonal }}
+{{- $isOmarchy := false }}{{ if hasKey . "isOmarchy" }}{{ $isOmarchy = .isOmarchy }}{{ end }}
+IS_OMARCHY={{ $isOmarchy }}
 
 log "OS=${OS} DISTRO_ID=${DISTRO_ID} DISTRO_LIKE=${DISTRO_LIKE} IS_PERSONAL=${IS_PERSONAL}"
 
@@ -208,21 +211,63 @@ EOF
     sudo dnf install -y 1password-cli
 }
 
-# --- Helper: install 1password-cli on personal Arch machines, from the AUR.
-# No AUR helper (yay/paru) is installed anywhere else in this repo, so build it
-# directly with makepkg rather than adding a new Layer-3 dependency just for
-# this one package. Idempotent. ---
-install_1password_cli_arch() {
-    if have op; then
-        log "1Password CLI already installed: $(op --version)"
-        return
+# --- Helper: build + install AUR packages. Uses yay when present (Omarchy
+# ships it); otherwise plain makepkg, so plain Arch needs no AUR helper added
+# just for this. Idempotent. ---
+install_aur_packages() {
+    local pkg build_dir
+    for pkg in "$@"; do
+        if pacman -Q "$pkg" >/dev/null 2>&1; then
+            log "AUR package already installed: ${pkg}"
+            continue
+        fi
+        log "Installing ${pkg} from the AUR..."
+        if have yay; then
+            yay -S --needed --noconfirm --answerdiff None --answerclean None "$pkg"
+        else
+            build_dir="$(mktemp -d)"
+            git clone --depth=1 "https://aur.archlinux.org/${pkg}.git" "$build_dir"
+            (cd "$build_dir" && makepkg -si --noconfirm)
+            rm -rf "$build_dir"
+        fi
+    done
+}
+
+# --- Helper: Arch-family install (plain Arch and Omarchy). ---
+install_arch_packages() {
+    local pkgs missing
+    pkgs="$(read_pkg_list "${PKG_DIR}/arch.txt")"
+    if [ "$IS_OMARCHY" = true ]; then
+        # Omarchy ships Docker as its container engine; skip the Podman stack.
+        pkgs="$(printf '%s\n' $pkgs | grep -vxE 'podman|podman-compose' | tr '\n' ' ')"
     fi
-    log "Installing 1Password CLI from AUR (personal machine)..."
-    local build_dir
-    build_dir="$(mktemp -d)"
-    git clone --depth=1 https://aur.archlinux.org/1password-cli.git "$build_dir"
-    (cd "$build_dir" && makepkg -si --noconfirm)
-    rm -rf "$build_dir"
+
+    # `pacman -T` prints only the entries NOT already satisfied, counting
+    # packages that *provide* them. `--needed` alone matches by name, so it would
+    # try to install ttf-jetbrains-mono-nerd over Omarchy's -basic variant (which
+    # provides the same font and conflicts with it) and fail the transaction.
+    missing="$(pacman -T $pkgs || true)"
+    if [ -z "$missing" ]; then
+        log "pacman packages already installed."
+    elif [ "$IS_OMARCHY" = true ]; then
+        # No -Syu: on Omarchy, system upgrades go through `omarchy update`, which
+        # snapshots first and runs Omarchy's migrations. Run that before the
+        # first apply if the package databases are stale.
+        log "Installing pacman packages: ${missing//$'\n'/ }"
+        sudo pacman -S --noconfirm --needed $missing
+    else
+        log "Installing pacman packages: ${missing//$'\n'/ }"
+        sudo pacman -Syu --noconfirm --needed $missing
+    fi
+
+    install_aur_packages $(read_pkg_list "${PKG_DIR}/arch-aur.txt")
+    if [ "$IS_PERSONAL" = true ]; then
+        if have op; then
+            log "1Password CLI already installed: $(op --version)"
+        else
+            install_aur_packages 1password-cli
+        fi
+    fi
 }
 
 # --- OS dispatch ---
@@ -242,10 +287,8 @@ case "$OS" in
                 sudo apt-get install -y $(read_pkg_list "${PKG_DIR}/debian.txt")
                 [ "$IS_PERSONAL" = true ] && install_1password_cli_debian
                 ;;
-            arch)
-                log "Installing pacman packages..."
-                sudo pacman -Syu --noconfirm --needed $(read_pkg_list "${PKG_DIR}/arch.txt")
-                [ "$IS_PERSONAL" = true ] && install_1password_cli_arch
+            arch|omarchy)
+                install_arch_packages
                 ;;
             fedora)
                 log "Installing dnf packages..."
@@ -264,8 +307,7 @@ case "$OS" in
                         ;;
                     *arch*)
                         log "Falling back to arch via idLike (${DISTRO_LIKE})..."
-                        sudo pacman -Syu --noconfirm --needed $(read_pkg_list "${PKG_DIR}/arch.txt")
-                        [ "$IS_PERSONAL" = true ] && install_1password_cli_arch
+                        install_arch_packages
                         ;;
                     *fedora*|*rhel*)
                         log "Falling back to fedora via idLike (${DISTRO_LIKE})..."

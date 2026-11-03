@@ -1,0 +1,3 @@
+# AUR package list for Arch / Omarchy (Layer 3 tools not in the official repos).
+# Built with yay when present (Omarchy ships it), else makepkg. See step 10.
+google-cloud-cli

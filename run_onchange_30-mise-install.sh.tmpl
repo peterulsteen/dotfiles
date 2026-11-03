@@ -3,10 +3,10 @@
 # that depend on Node.
 #
 # This is `run_onchange_*` (not `run_once_*`) — chezmoi re-runs it whenever the
-# rendered script content changes. The mise.toml hash below gets embedded in
-# the rendered script, so any edit to mise.toml re-triggers this step:
+# rendered script content changes. The mise config hash below gets embedded in
+# the rendered script, so any edit to the mise config re-triggers this step:
 #
-# mise.toml hash: {{ include "dot_config/mise/config.toml.tmpl" | sha256sum }}
+# mise config hash: {{ include "dot_config/mise/config.local.toml.tmpl" | sha256sum }}
 
 set -euo pipefail
 
@@ -60,10 +60,17 @@ mise reshim 2>/dev/null || true
 # --- Corepack: enables corepack-managed pnpm/yarn/npm shims ---
 # Reads packageManager field from each repo's package.json. Activates pnpm
 # globally as a baseline for use outside any specific project.
+# Node 25+ no longer bundles corepack, so the mise config installs it as
+# npm:corepack. Its shims land next to the corepack binary in that mise install,
+# so reshim afterwards to expose pnpm/yarn. After `mise upgrade` moves corepack
+# to a new version, re-run `corepack enable && mise reshim`.
 if command -v corepack >/dev/null 2>&1; then
     log "Enabling corepack and activating pnpm baseline..."
     corepack enable
     corepack prepare pnpm@latest --activate
+    mise reshim 2>/dev/null || true
+else
+    echo "[bootstrap] WARN: corepack not found; pnpm/yarn are unavailable (check npm:corepack in the mise config)." >&2
 fi
 
 # --- Codex CLI via npm (self-managing thereafter) ---

@@ -13,15 +13,15 @@ Read `README.md` first for the public-facing overview, then this file for workin
 Every tool belongs to exactly **one** of three layers. This is the most important invariant in the repo:
 
 1. **Self-managing** — `mise`, `uv`, `rustup`, `claude`, `codex`. Installed once via `curl ... | sh` in `run_once_before_20-install-self-managers.sh.tmpl`. Updated by themselves. Never put these in `mise.toml` or any package list.
-2. **Mise** — language runtimes + cross-platform CLIs. Source of truth: `dot_config/mise/config.toml.tmpl`. Same content on every OS.
+2. **Mise** — language runtimes + cross-platform CLIs. Source of truth: `dot_config/mise/config.local.toml.tmpl` (deployed as `~/.config/mise/config.local.toml`, which outranks `config.toml`; plain `config.toml` is left to ad-hoc `mise use -g`). Same content on every OS.
 3. **Native pkg mgr** — `brew` (macOS), `apt`/`pacman`/`dnf` (Linux). Only for tools needing OS integration: login shells, terminal emulators, system crypto, daemons, fonts. Sources of truth: `Brewfile.darwin.tmpl` and `packages/{arch,debian,fedora}.txt`.
 
 ### When adding a new tool
 
 Decision tree:
 1. Does the tool have a curl-pipe installer with self-update? → **Layer 1.** Add to `run_once_before_20-install-self-managers.sh.tmpl`.
-2. Does it need OS integration (login shell, terminal, daemon, font, GUI app)? → **Layer 3.** Add to `Brewfile.darwin.tmpl` AND each of `packages/{arch,debian,fedora}.txt` (using each pkg manager's name for the tool).
-3. Otherwise (single-binary CLI, language runtime, dev utility) → **Layer 2.** Add to `dot_config/mise/config.toml.tmpl`.
+2. Does it need OS integration (login shell, terminal, daemon, font, GUI app)? → **Layer 3.** Add to `Brewfile.darwin.tmpl` AND each of `packages/{arch,debian,fedora}.txt` (using each pkg manager's name for the tool; AUR-only Arch packages go in `packages/arch-aur.txt`).
+3. Otherwise (single-binary CLI, language runtime, dev utility) → **Layer 2.** Add to `dot_config/mise/config.local.toml.tmpl`.
 
 If you're tempted to add the same tool to two places — stop. Pick one. PATH order in `dot_config/shell/env.sh` puts `~/.local/bin` first, then `~/.local/share/mise/shims/`, then OS pkg manager paths, but relying on this to mask duplicates causes drift.
 
@@ -35,7 +35,7 @@ If you're tempted to add the same tool to two places — stop. Pick one. PATH or
 
 ## Conventions
 
-- **Templates** end in `.tmpl`. Use chezmoi template syntax (`{{ }}`) for per-OS branching: `{{ if eq .chezmoi.os "darwin" }}...{{ end }}`. Linux distros are detected via `{{ .chezmoi.osRelease.id }}` (`pop`, `ubuntu`, `arch`, `fedora`) and `.idLike`.
+- **Templates** end in `.tmpl`. Use chezmoi template syntax (`{{ }}`) for per-OS branching: `{{ if eq .chezmoi.os "darwin" }}...{{ end }}`. Linux distros are detected via `{{ .chezmoi.osRelease.id }}` (`pop`, `ubuntu`, `arch`, `omarchy`, `fedora`) and `.idLike`. Omarchy has its own `isOmarchy` data flag (detected at `chezmoi init`, not prompted); read it with the `hasKey` default-false pattern used for `isPersonal`.
 - **File naming** follows chezmoi's prefix conventions:
   - `dot_<name>` → `~/.<name>` (e.g., `dot_config/` → `~/.config/`)
   - `private_<name>` → file mode 0600
@@ -45,21 +45,32 @@ If you're tempted to add the same tool to two places — stop. Pick one. PATH or
 - **Bootstrap script ordering** is encoded in the numeric prefix:
   - `10-install-package-managers` — brew on mac, apt update on Linux, install Layer 3 packages
   - `20-install-self-managers` — install Layer 1 tools (mise, uv, rustup, claude, codex)
-  - `30-mise-install` — `mise install` to materialize Layer 2 tools (re-runs when `mise.toml` changes)
+  - `30-mise-install` — `mise install` to materialize Layer 2 tools (re-runs when the mise config changes)
   - `40-macos-defaults` — macOS system tweaks (skipped on Linux via .chezmoiignore)
 - **Bootstrap scripts get PATH from `env.sh`**: a script that needs installed tools sources `{{ .chezmoi.sourceDir }}/dot_config/shell/env.sh` rather than hand-listing dirs. On a fresh machine the shell that launched chezmoi has none of brew, `~/.cargo/bin`, or the mise shims on PATH. (Step 20 is the exception, since those dirs don't exist yet when it starts and env.sh only adds dirs that exist.)
-- **Shell layout**: `dot_zprofile` (login env, sources `env.sh`) + `dot_zshrc` (interactive: sheldon plugins, guarded aliases, tool init) for zsh; `dot_bashrc`/`dot_profile` for lean servers. All environment + PATH lives in `dot_config/shell/env.sh` (strictly POSIX, sourced by both zsh and bash). The one exception is `dot_zshenv.tmpl`, read by every zsh including the non-interactive one sshd starts for `ssh host cmd` (which never reads `.zprofile`): it carries only the PATH those shells need (Homebrew's bin for `mosh-server`, the clbudget shim). Never prepend to PATH after `mise activate` — `mise doctor` flags it and the entry shadows mise's tools; a dir that must beat mise (the clbudget pnpm shim) goes in mise's `[env] _.path` instead. Machine-local, non-public extras go in the unmanaged `~/.zshrc.local`. Abbreviations are code in `dot_config/zsh-abbr/user-abbreviations`; plugins are declared in `dot_config/sheldon/plugins.toml`.
+- **Shell layout**: `dot_zprofile` (login env, sources `env.sh`) + `dot_zshrc` (interactive: sheldon plugins, guarded aliases, tool init) for zsh; `dot_bashrc.tmpl`/`dot_profile` for lean servers (on Omarchy, `dot_bashrc.tmpl` keeps Omarchy's bash setup and layers `env.sh` in). All environment + PATH lives in `dot_config/shell/env.sh` (strictly POSIX, sourced by both zsh and bash). The one exception is `dot_zshenv.tmpl`, read by every zsh including the non-interactive one sshd starts for `ssh host cmd` (which never reads `.zprofile`): it carries only the PATH those shells need (Homebrew's bin for `mosh-server`, the clbudget shim). Never prepend to PATH after `mise activate` — `mise doctor` flags it and the entry shadows mise's tools; a dir that must beat mise (the clbudget pnpm shim) goes in mise's `[env] _.path` instead. Machine-local, non-public extras go in the unmanaged `~/.zshrc.local`. Abbreviations are code in `dot_config/zsh-abbr/user-abbreviations`; plugins are declared in `dot_config/sheldon/plugins.toml`.
 - **Don't sync sensitive dirs** — `~/.aws/`, `~/.docker/`, `~/.ssh/`, `~/.gnupg/`, `~/.codex/`, `~/.cursor/`, `~/.copilot/`, `~/.cagent/`, `~/.claude.json`. These are listed in `.chezmoiignore` and must stay there.
 - **`.chezmoiignore` matches TARGET paths**, not source paths. Use `.config/foo`, never `dot_config/foo`; strip the `.tmpl` suffix (`Brewfile.darwin`, not `Brewfile.darwin.tmpl`). A source-style pattern silently matches nothing — dangerous for a secret ignore list. Verify with `chezmoi managed`.
 - **Secret-scanning is defense-in-depth** (this repo is public): `.chezmoiignore` blocks `chezmoi add` of secret-bearing files; a global gitleaks pre-commit hook (`dot_config/git/hooks/executable_pre-commit`, wired via `core.hooksPath`) blocks commits; `.github/workflows/gitleaks.yml` scans history in CI; GitHub push protection is the server-side backstop. gitleaks is a Layer-2 (mise) tool; v8.30+ dropped `protect`/`detect` — use `gitleaks git --staged`. Never weaken these guards to make a commit pass; fix the secret or use an explicit allowlist.
-- **Commit `lazy-lock.json`** for Neovim — gives reproducible plugin versions across machines. Update with `:Lazy update` deliberately.
+- **Commit `lazy-lock.json`** for Neovim — gives reproducible plugin versions across machines. Update with `:Lazy update` deliberately. Exception: on Omarchy, `lazy-lock.json` and `lazyvim.json` are `.chezmoiignore`d, because Omarchy's LazyVim adds theme plugins and extras the Mac doesn't have.
 - **Zellij config is a minimal override**, not a `clear-defaults=true` dump. Only put lines you actually want to change in `dot_config/zellij/config.kdl` so upstream default keybinds/plugins keep flowing through on upgrade. Validate edits with `zellij --config dot_config/zellij/config.kdl setup --check`. Zellij plugins (e.g. vim-zellij-navigator) are referenced by release URL in the config and fetched/cached at runtime — there is nothing to add to mise/brew for them. The Neovim half of `Ctrl+h/j/k/l` navigation is `smart-splits.nvim`; its maps live in `dot_config/nvim/lua/config/keymaps.lua` (not the plugin spec) so they override LazyVim's defaults. Zellij's serialized sessions live in the cache dir, never `~/.config/zellij/`, so they're out of chezmoi's scope by construction.
+
+## Omarchy: layer on its defaults, don't replace them
+
+Omarchy (Arch + Hyprland, `ID=omarchy`) ships opinionated defaults under `/usr/share/omarchy/` (read-only, updated by `omarchy update`) and edits some files in `~/.config` itself through its commands and migrations. The owner likes those defaults, so on Omarchy (`isOmarchy`) this repo *adds* to them, the same idea as the minimal Zellij override:
+
+- **Include, then override**: git config `[include]`s `/usr/share/omarchy/config/git/config` before this repo's settings; `.bashrc` sources Omarchy's `env-bootstrap` and `default/bash/rc`.
+- **Files Omarchy edits in place** (Ghostty: `omarchy font set`, text size, migrations) are chezmoi `modify_` templates that keep the live file and only maintain a marked `# >>> dotfiles >>>` block.
+- **Never edit or template over `/usr/share/omarchy/`**; never manage `~/.config/hypr/`, `~/.config/omarchy/`, or Omarchy's Neovim theme files (`lua/plugins/theme.lua` symlink, `all-themes.lua`, `omarchy-theme-hotreload.lua`, `lua/config/remote_clipboard.lua`).
+- **Packages**: no `pacman -Syu` (upgrades go through `omarchy update`); entries already provided by Omarchy's packages are skipped via `pacman -T`; AUR-only packages go in `packages/arch-aur.txt` (built with `yay`); Podman is skipped because Omarchy ships Docker.
+- **Expected layer exceptions**: Omarchy installs `mise` from pacman (so no mise self-update), and runs `claude`/`codex`/`gh` through `~/.local/bin` wrappers that call `mise use -g` (which writes to `config.toml`, not this repo's `config.local.toml`). Omarchy's pacman also installs starship, zoxide, eza, fzf, ripgrep, fd, bat, jq, tldr, lazygit, neovim and tree-sitter, which mise installs again: interactive shells use the mise copies (shims come first), Hyprland and Omarchy's scripts use `/usr/bin`. That duplication is accepted; don't remove Omarchy's packages to "fix" it.
+- **zsh on Omarchy** gets Omarchy's bash-only aliases from a guarded block in `dot_zshrc`, and its layout helpers (`tdl`, `hdl`, …) run through a bash bridge. Its worktree helpers `ga`/`gd` stay bash-only (`gd` is git diff here).
 
 ## Common workflows
 
 ### Adding a new CLI tool you want everywhere
 1. Determine its layer (decision tree above).
-2. If Layer 2: add to `dot_config/mise/config.toml.tmpl` under `[tools]`. Run `chezmoi apply` then `mise install`.
+2. If Layer 2: add to `dot_config/mise/config.local.toml.tmpl` under `[tools]`. Run `chezmoi apply` then `mise install`.
 3. If Layer 3: add to `Brewfile.darwin.tmpl` *and* each Linux distro file in `packages/`.
 
 ### Changing a config file

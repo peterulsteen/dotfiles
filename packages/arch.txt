@@ -1,5 +1,11 @@
 # pacman package list for Arch / Omarchy (Layer 3 tools)
+# Entries already satisfied by an installed package that *provides* them (e.g.
+# Omarchy's ttf-jetbrains-mono-nerd-basic) are skipped -- see step 10.
 zsh
+# zsh plugin manager. In Arch's extra repo, so no cargo build (Pop/Fedora still
+# build it with cargo in step 20).
+sheldon
+# Skipped on Omarchy, which ships Docker instead.
 podman
 podman-compose
 gnupg
@@ -9,6 +15,6 @@ util-linux
 mosh
 pass
 aws-cli-v2
-google-cloud-cli
 ttf-jetbrains-mono-nerd
-# 1password-cli is in AUR (1password-cli) — handled separately on personal machines
+# AUR-only packages (google-cloud-cli) live in arch-aur.txt.
+# 1password-cli is AUR too -- installed separately, personal machines only.

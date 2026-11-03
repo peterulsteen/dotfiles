@@ -1,0 +1,62 @@
+{{- $omarchy := false }}{{ if hasKey . "isOmarchy" }}{{ $omarchy = .isOmarchy }}{{ end -}}
+{{- if $omarchy -}}
+# Interactive bash on Omarchy.
+#
+# Omarchy's own bash setup stays in charge (its scripts, SSH sessions and
+# `bash -lc` all run bash here), with this repo's env layered in. The zsh
+# workstation stack is separate; this is only so bash keeps working the
+# Omarchy way.
+
+# Omarchy environment (OMARCHY_PATH + PATH), needed even for non-interactive shells.
+[[ -r /usr/share/omarchy/default/bash/env-bootstrap ]] && source /usr/share/omarchy/default/bash/env-bootstrap
+
+# Shared env BEFORE Omarchy's rc: its init runs `mise activate`, and nothing may
+# prepend to PATH after that.
+[ -f "$HOME/.config/shell/env.sh" ] && . "$HOME/.config/shell/env.sh"
+
+# If not running interactively, don't do anything else.
+[[ $- != *i* ]] && return
+
+# All the default Omarchy aliases, functions and tool init (mise, starship,
+# zoxide, fzf). Override them below rather than editing Omarchy's files.
+source "$OMARCHY_PATH/default/bash/rc"
+
+# The repo's server aliases, minus `gd`: Omarchy defines a `gd` worktree function.
+command -v eza >/dev/null 2>&1 && alias ll='eza -lah --icons --git --group-directories-first'
+alias gst='git status'
+alias gl='git pull'
+alias gp='git push'
+
+# Tools Omarchy's rc doesn't init. atuin last so it owns Ctrl-R / up-arrow.
+command -v direnv >/dev/null 2>&1 && eval "$(direnv hook bash)"
+command -v atuin  >/dev/null 2>&1 && eval "$(atuin init bash)"
+{{- else -}}
+# Interactive bash for lean servers/VMs.
+#
+# No plugin manager here -- the "servers lean" profile. Just shared env, a few
+# aliases, and the standalone tools worth having on a box you SSH into. The rich
+# zsh stack (sheldon, autosuggestions, abbreviations) lives only on workstations.
+
+[ -f "$HOME/.config/shell/env.sh" ] && . "$HOME/.config/shell/env.sh"
+
+# Interactive only.
+case $- in *i*) ;; *) return ;; esac
+
+# Minimal aliases. bash has no fish-style abbreviations; these mirror the few
+# that matter most on a server. (Workstations get the full set via zsh-abbr.)
+command -v eza >/dev/null 2>&1 && alias ll='eza -lah --icons --git --group-directories-first' \
+                               || alias ll='ls -lah'
+alias gst='git status'
+alias gd='git diff'
+alias gl='git pull'
+alias gp='git push'
+command -v podman >/dev/null 2>&1 && alias docker='podman'
+
+# Standalone tools (bash init), guarded so a minimal box degrades gracefully.
+command -v starship >/dev/null 2>&1 && eval "$(starship init bash)"
+command -v zoxide   >/dev/null 2>&1 && eval "$(zoxide init bash)"
+command -v direnv   >/dev/null 2>&1 && eval "$(direnv hook bash)"
+command -v mise     >/dev/null 2>&1 && eval "$(mise activate bash)"
+# atuin last so it owns Ctrl-R / up-arrow history.
+command -v atuin    >/dev/null 2>&1 && eval "$(atuin init bash)"
+{{- end }}

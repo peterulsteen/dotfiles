@@ -14,6 +14,12 @@
 {{- $workEmail   := promptStringOnce . "workEmail"   "Work email for work-directory repos (blank if none)" "" -}}
 {{- $workdir     := promptStringOnce . "workdir"     "Path under which work repos live, for the git identity override (blank if none)" "" -}}
 
+{{- /* Detected, not prompted. Omarchy is Arch plus Omarchy's own packaged
+       defaults under /usr/share/omarchy. Templates use this to layer on top of
+       those defaults instead of replacing them. */ -}}
+{{- $isOmarchy := false -}}
+{{- if and (eq .chezmoi.os "linux") (stat "/usr/share/omarchy") }}{{ $isOmarchy = true }}{{ end -}}
+
 # Record where this working tree lives so `chezmoi diff`/`apply` work without
 # passing --source each time. On a fresh machine that `chezmoi init`s from
 # GitHub, this resolves to chezmoi's default (~/.local/share/chezmoi); on this
@@ -26,5 +32,6 @@ sourceDir = {{ .chezmoi.sourceDir | quote }}
     signingkey = {{ $signingkey | quote }}
     isPersonal = {{ $isPersonal }}
     isWorkstation = {{ $isWorkstation }}
+    isOmarchy  = {{ $isOmarchy }}
     workEmail  = {{ $workEmail  | quote }}
     workdir    = {{ $workdir    | quote }}
