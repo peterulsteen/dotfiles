@@ -15,11 +15,11 @@ elif [ -x /home/linuxbrew/.linuxbrew/bin/brew ]; then
   eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 fi
 
-# --- PATH: ~/bin > ~/.local/bin > mise shims > cargo > Dory > everything else. ---
+# --- PATH: ~/bin > ~/.local/bin > mise shims > cargo > everything else. ---
 # Iterate lowest-priority first; each prepend pushes earlier entries ahead.
 # Every PATH edit lives here, ahead of `mise activate` in the rc files, so mise's
 # tool paths still land first (`mise doctor` warns about anything added later).
-for _dir in "$HOME/.dory/bin" "$HOME/.cargo/bin" "$HOME/.local/share/mise/shims" "$HOME/.local/bin" "$HOME/bin"; do
+for _dir in "$HOME/.cargo/bin" "$HOME/.local/share/mise/shims" "$HOME/.local/bin" "$HOME/bin"; do
   case ":$PATH:" in
     *":$_dir:"*) ;;                                  # already present
     *) [ -d "$_dir" ] && PATH="$_dir:$PATH" ;;

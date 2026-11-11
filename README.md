@@ -39,7 +39,7 @@ This is the decision I keep coming back to. Every tool lives in **exactly one** 
 |---|---|---|---|
 | **1. Self-managing** | The tool's own installer / `<tool> self update` | `mise`, `uv`, `rustup`, `claude`, `codex` | Things that ship fast and update themselves well. I bootstrap them once and leave them alone. |
 | **2. mise** | `~/.config/mise/config.toml` | `node`, `go`, `terraform`, `opentofu`, `terragrunt`, `kubectl`, `helm`, `k9s`, `postgres`, `gh`, `lazygit`, `neovim`, `fzf`, `ripgrep`, `jq`, `fd`, `bat`, `eza`, `zoxide`, `atuin`, `starship`, `zellij`, `just`, `direnv`, `delta`, `carapace`, `gitleaks`, `stylua`, `selene`, `tree-sitter`, `turbo`, `shellcheck`, `actionlint`, `tealdeer`, `lua-language-server` | Cross-platform single-binary tools and language runtimes. One declarative file, same on all four OSs. |
-| **3. Native pkg mgr** | `brew` / `apt` / `pacman` / `dnf` | `zsh` (login shell; built-in on macOS), `sheldon`, `ghostty`, `gnupg`, `dory` (macOS), `podman`, `podman-compose`, `stats` (macOS), `mosh`, `moshi-hook` (macOS; Moshi's installer on Linux), fonts, `coreutils`, `gnu-getopt`, `awscli`, `google-cloud-cli`, `pass`, `1password-cli` (personal machines only) | Things that need real OS integration: login shells, terminal emulators, system crypto, daemons, GUI apps, fonts. |
+| **3. Native pkg mgr** | `brew` / `apt` / `pacman` / `dnf` | `zsh` (login shell; built-in on macOS), `sheldon`, `ghostty`, `gnupg`, `docker-desktop` (macOS), `podman`, `podman-compose`, `stats` (macOS), `mosh`, `moshi-hook` (macOS; Moshi's installer on Linux), fonts, `coreutils`, `gnu-getopt`, `awscli`, `google-cloud-cli`, `pass`, `1password-cli` (personal machines only) | Things that need real OS integration: login shells, terminal emulators, system crypto, daemons, GUI apps, fonts. |
 
 My one hard rule: **a tool gets exactly one layer.** No `claude` in both `~/.local/bin` and a Brewfile, no `node` in both mise and brew, no `rust` in mise (rustup owns it). When two layers fight over the same tool, I get silent drift — so I don't let them.
 
@@ -66,7 +66,9 @@ My one hard rule: **a tool gets exactly one layer.** No `claude` in both `~/.loc
 
 On Linux I run **podman** — `podman compose` for compose files. My shell aliases `docker` → `podman` so the muscle memory still works, but it's a *guarded* alias, skipped when a real `docker` binary is present, so it never shadows the real thing.
 
-On macOS I use [**Dory**](https://github.com/Augani/dory) (`augani/dory` tap) instead — a lighter-weight Docker-compatible runtime than running a full podman machine VM. `podman`/`podman-compose`/`podman-desktop` still install via the Brewfile for parity with the Linux machines, but the bootstrap does **not** auto-run `podman machine init`/`start` — if you want podman instead of Dory on a Mac, that's a manual step.
+On macOS I use **Docker Desktop** (`docker-desktop` cask), which provides the real `docker` CLI, so the guarded alias steps aside. `podman`/`podman-compose`/`podman-desktop` still install via the Brewfile for parity with the Linux machines, but the bootstrap does **not** auto-run `podman machine init`/`start` — if you want podman instead of Docker Desktop on a Mac, that's a manual step.
+
+Switching a Mac that previously ran Dory: chezmoi won't uninstall it, so run `brew uninstall --cask dory && rm -rf ~/.dory` once.
 
 ## Menu-bar monitoring (Stats, macOS)
 

@@ -12,13 +12,13 @@
 brew "sheldon"    # zsh plugin manager (workstation interactive stack)
 
 # --- Container engine ---
-# Dory (github.com/Augani/dory) is a lightweight Docker-compatible runtime,
-# lower resource overhead than a full podman machine VM. Requires macOS >= 15.
-tap "augani/dory"
-cask "dory"
+# Docker Desktop is the Mac container engine (standardized on it after dropping
+# Dory, whose shared VM never got a working docker CLI context). It ships a real
+# `docker`, so the guarded docker->podman alias in dot_zshrc stays out of the way.
+cask "docker-desktop"
 # Podman stays installed as a fallback/for parity with the Linux machines, but
 # its VM is NOT auto-initialized here (see README) -- `podman machine init &&
-# podman machine start` if you actually want to use it instead of Dory.
+# podman machine start` if you actually want to use it instead of Docker Desktop.
 brew "podman"
 brew "podman-compose"
 cask "podman-desktop"   # GUI; Podman replacement for Docker Desktop
