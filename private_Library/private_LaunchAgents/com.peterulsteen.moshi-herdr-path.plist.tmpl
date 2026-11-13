@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Tells the brew-managed moshi-hook daemon where herdr lives.
+     brew services runs the daemon under launchd's default PATH
+     (/usr/bin:/bin:/usr/sbin:/sbin), so the mise-installed herdr is invisible and
+     `moshi-hook doctor` reports Chat View / Workspaces / Session picker as broken.
+     The daemon honours MOSHI_HERDR_PATH; this agent exports it into the gui/<uid>
+     launchd domain at login, then kickstarts the daemon so it picks it up.
+     (Editing sh.brew.moshi-hook.plist instead would be overwritten by brew.)
+     `latest` is mise's stable symlink, so herdr upgrades don't break the path.
+     Loaded/reloaded by run_onchange_after_50-reload-launchagents.sh.tmpl. -->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.peterulsteen.moshi-herdr-path</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/sh</string>
+        <string>-c</string>
+        <string>/bin/launchctl setenv MOSHI_HERDR_PATH "{{ .chezmoi.homeDir }}/.local/share/mise/installs/herdr/latest/herdr"; /bin/launchctl kickstart -k "gui/$(/usr/bin/id -u)/sh.brew.moshi-hook" || true</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+
+    <key>StandardOutPath</key>
+    <string>{{ .chezmoi.homeDir }}/Library/Logs/moshi-herdr-path.log</string>
+    <key>StandardErrorPath</key>
+    <string>{{ .chezmoi.homeDir }}/Library/Logs/moshi-herdr-path.log</string>
+</dict>
+</plist>

@@ -1,0 +1,5 @@
+{{- /* macOS only: Tailscale.app bundles the CLI but doesn't put it on PATH, and the binary must be run from inside the bundle (a symlink breaks its bundle-id lookup). Linux uses the real package. */ -}}
+{{- if eq .chezmoi.os "darwin" -}}
+#!/bin/sh
+exec /Applications/Tailscale.app/Contents/MacOS/Tailscale "$@"
+{{ end -}}
